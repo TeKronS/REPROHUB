@@ -33,10 +33,10 @@ export function MuralCanvas({ imageUrl, rows, cols, overlap, showGuides }: Mural
   return (
     <div 
       ref={containerRef}
-      className="relative flex-1 bg-[#050a06] overflow-hidden flex items-center justify-center p-12"
+      className="relative flex-1 bg-muted/30 overflow-hidden flex items-center justify-center p-12"
     >
       <div 
-        className="relative shadow-2xl transition-transform duration-200 ease-out"
+        className="relative shadow-2xl transition-transform duration-200 ease-out bg-white"
         style={{ transform: `scale(${zoom})` }}
       >
         <img 
@@ -55,18 +55,18 @@ export function MuralCanvas({ imageUrl, rows, cols, overlap, showGuides }: Mural
             <div 
               key={i} 
               className={cn(
-                "border-primary/30 relative",
-                showGuides ? "border" : "border-0"
+                "relative",
+                showGuides ? "border border-primary/60 border-[1.5px]" : "border-0"
               )}
             >
               {showGuides && (
                 <>
-                  <span className="absolute top-1 left-1 text-[8px] font-mono text-primary bg-background/50 px-1 rounded">
+                  <span className="absolute top-1 left-1 text-[10px] font-bold font-mono text-primary bg-white/90 px-1.5 py-0.5 rounded shadow-sm z-10">
                     {Math.floor(i / cols) + 1}-{ (i % cols) + 1}
                   </span>
-                  {/* Overlap visualization dots/lines */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                    <div className="w-[80%] h-[80%] border border-accent border-dashed" />
+                  {/* Overlap visualization dots/lines - More visible in light mode */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                    <div className="w-[90%] h-[90%] border border-accent border-dashed border-2" />
                   </div>
                 </>
               )}
@@ -76,8 +76,8 @@ export function MuralCanvas({ imageUrl, rows, cols, overlap, showGuides }: Mural
       </div>
 
       {/* Zoom indicator */}
-      <div className="absolute bottom-4 right-4 bg-card/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-mono border border-border shadow-xl">
-        {Math.round(zoom * 100)}%
+      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold font-mono border border-border shadow-xl text-primary">
+        ZOOM: {Math.round(zoom * 100)}%
       </div>
     </div>
   );
