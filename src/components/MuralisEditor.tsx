@@ -34,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: string }> = {
   'Letter': { width: 215.9, height: 279.4, format: 'letter' },
