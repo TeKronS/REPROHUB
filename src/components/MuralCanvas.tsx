@@ -41,6 +41,11 @@ export function MuralCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
+  // Reset offset (center) when critical layout parameters change
+  useEffect(() => {
+    setOffset({ x: 0, y: 0 });
+  }, [rows, cols, paperSize, imageUrl]);
+
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
