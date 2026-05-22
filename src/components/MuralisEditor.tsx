@@ -17,7 +17,8 @@ import {
   Maximize,
   Link2,
   Image as ImageIcon,
-  Ruler
+  Ruler,
+  Maximize2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -269,30 +270,64 @@ export default function MuralisEditor() {
       </header>
 
       <main className="flex-1 flex overflow-hidden">
-        <section className="flex-1 relative bg-[#f8f9fa] overflow-hidden flex items-center justify-center">
+        <section className="flex-1 relative bg-[#f8f9fa] overflow-hidden flex flex-col items-center justify-center">
           {!image ? (
             <div className="max-w-lg w-full p-8 animate-fade-in">
               <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
             </div>
           ) : (
-            <div className="w-full h-full p-4 md:p-8">
-              {view === 'editor' ? (
-                <MuralCanvas 
-                  imageUrl={image.url} 
-                  rows={rows} 
-                  cols={cols} 
-                  overlap={overlap} 
-                  marginV={marginV} 
-                  marginH={marginH}
-                  paperSize={paperSize} 
-                  showGuides={showGuides} 
-                  imageWidth={image.width} 
-                  imageHeight={image.height} 
-                />
-              ) : (
-                <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
+            <>
+              {/* Floating measurements bar above canvas */}
+              {physicalInfo && (
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-8">
+                  <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-8 py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
+                    <div className="flex items-center gap-6">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t.finalMeasures}</span>
+                        <div className="flex items-center gap-2">
+                          <Maximize2 className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-base font-black text-foreground">{physicalInfo.totalW} x {physicalInfo.totalH} cm</span>
+                        </div>
+                      </div>
+                      <Separator orientation="vertical" className="h-8 opacity-50" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Paneles</span>
+                        <div className="flex items-center gap-2">
+                          <Layers className="h-3.5 w-3.5 text-accent" />
+                          <span className="text-base font-black text-foreground">{rows * cols} {lang === 'es' ? 'HOJAS' : 'SHEETS'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-end">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t.paperSize}</span>
+                        <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{paperSize}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
+              
+              <div className="w-full h-full p-4 md:p-8 flex flex-col pt-24">
+                {view === 'editor' ? (
+                  <MuralCanvas 
+                    imageUrl={image.url} 
+                    rows={rows} 
+                    cols={cols} 
+                    overlap={overlap} 
+                    marginV={marginV} 
+                    marginH={marginH}
+                    paperSize={paperSize} 
+                    showGuides={showGuides} 
+                    imageWidth={image.width} 
+                    imageHeight={image.height} 
+                  />
+                ) : (
+                  <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
+                )}
+              </div>
+            </>
           )}
         </section>
 
