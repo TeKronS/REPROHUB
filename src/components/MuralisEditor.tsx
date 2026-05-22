@@ -45,6 +45,7 @@ const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: 
 };
 
 export default function MuralisEditor() {
+  const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Language>('es');
   const [image, setImage] = useState<{ url: string; file: File; width: number; height: number } | null>(null);
   const [rows, setRows] = useState(2);
@@ -57,6 +58,10 @@ export default function MuralisEditor() {
   const [isExporting, setIsExporting] = useState(false);
   const [lockAspect, setLockAspect] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const t = translations[lang];
 
@@ -166,6 +171,8 @@ export default function MuralisEditor() {
       setIsExporting(false);
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="flex flex-col h-screen w-full font-body bg-white text-foreground">
