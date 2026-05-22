@@ -33,7 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export default function MuralisEditor() {
-  const [lang, setLang] = useState<Language>('en');
+  const [lang, setLang] = useState<Language>('es');
   const [image, setImage] = useState<{ url: string; file: File } | null>(null);
   const [rows, setRows] = useState(3);
   const [cols, setCols] = useState(4);
@@ -49,7 +49,7 @@ export default function MuralisEditor() {
   };
 
   const handleExport = () => {
-    alert("Exporting high resolution PDF with numbered tiles...");
+    alert("Exportando PDF de alta resolución con paneles numerados...");
   };
 
   return (
@@ -174,13 +174,13 @@ export default function MuralisEditor() {
                 </div>
                 <Select value={paperSize} onValueChange={setPaperSize}>
                   <SelectTrigger className="bg-white border-border">
-                    <SelectValue placeholder="Select paper size" />
+                    <SelectValue placeholder="Seleccionar tamaño" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="A4">A4 (210 x 297 mm)</SelectItem>
                     <SelectItem value="A3">A3 (297 x 420 mm)</SelectItem>
-                    <SelectItem value="Letter">Letter (8.5 x 11 in)</SelectItem>
-                    <SelectItem value="Legal">Legal (8.5 x 14 in)</SelectItem>
+                    <SelectItem value="Letter">Carta (8.5 x 11 in)</SelectItem>
+                    <SelectItem value="Legal">Oficio (8.5 x 14 in)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -220,10 +220,10 @@ export default function MuralisEditor() {
               <h3 className="text-xs font-headline font-bold text-primary uppercase">{t.totalPanels}</h3>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-headline font-black text-primary">{rows * cols}</span>
-                <span className="text-xs text-muted-foreground font-mono">pcs</span>
+                <span className="text-xs text-muted-foreground font-mono">uds</span>
               </div>
               <p className="text-[10px] leading-relaxed text-muted-foreground">
-                Estimated total wall size: <br/>
+                Tamaño de pared estimado: <br/>
                 <span className="text-primary font-bold">~{Math.round(cols * 21)} x {Math.round(rows * 29)} cm</span>
               </p>
             </div>
@@ -240,12 +240,12 @@ export default function MuralisEditor() {
       {/* Bottom Status Bar */}
       <footer className="h-8 border-t border-border bg-white px-4 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-widest z-50 shadow-inner">
         <div className="flex gap-4">
-          <span className="flex items-center gap-1 font-semibold"><Settings className="h-3 w-3" /> System: Online</span>
-          <span className="flex items-center gap-1"><Grid3X3 className="h-3 w-3" /> Engine: V2.5 Professional</span>
+          <span className="flex items-center gap-1 font-semibold"><Settings className="h-3 w-3" /> Sistema: Online</span>
+          <span className="flex items-center gap-1"><Grid3X3 className="h-3 w-3" /> Motor: V2.5 Professional</span>
         </div>
         <div className="flex gap-4">
-          <span>Resolution: 300 DPI</span>
-          <span className="text-primary font-bold">High Precision Mode: On</span>
+          <span>Resolución: 300 DPI</span>
+          <span className="text-primary font-bold">Alta Precisión: ON</span>
         </div>
       </footer>
     </div>
