@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -87,7 +88,7 @@ export function MuralCanvas({
             draggable={false}
           />
           
-          {/* Grid Overlay Dinámico */}
+          {/* Grid Overlay Dinámico con líneas más visibles */}
           <div className="absolute inset-0 grid pointer-events-none" 
                style={{ 
                  gridTemplateRows: `repeat(${rows}, 1fr)`,
@@ -102,14 +103,14 @@ export function MuralCanvas({
                   key={i} 
                   className={cn(
                     "relative",
-                    showGuides ? "border border-primary/30" : "border-0"
+                    showGuides ? "border border-primary/60 ring-1 ring-primary/10" : "border-0"
                   )}
                 >
                   {showGuides && (
                     <>
                       {/* Identificador de panel */}
                       <div className="absolute top-2 left-2 z-30">
-                        <span className="text-[10px] font-black font-mono text-primary bg-white/95 px-2 py-0.5 rounded-md shadow-sm border border-primary/20 backdrop-blur-sm">
+                        <span className="text-[10px] font-black font-mono text-primary bg-white/95 px-2 py-0.5 rounded-md shadow-sm border border-primary/30 backdrop-blur-sm">
                           {rowIdx + 1}-{colIdx + 1}
                         </span>
                       </div>
@@ -124,22 +125,22 @@ export function MuralCanvas({
                       {/* Derecha */}
                       {colIdx < cols - 1 && (
                         <div 
-                          className="absolute right-0 top-0 bottom-0 bg-accent/25 border-r border-dashed border-accent/40 z-20 overflow-hidden"
+                          className="absolute right-0 top-0 bottom-0 bg-accent/30 border-r border-dashed border-accent/60 z-20 overflow-hidden"
                           style={{ width: `${overlap * 10}px`, maxWidth: '30%' }}
                         >
                           <div className="h-full w-full flex items-center justify-center">
-                             <div className="rotate-90 text-[7px] font-black text-accent tracking-widest whitespace-nowrap opacity-70">SOLAPE</div>
+                             <div className="rotate-90 text-[7px] font-black text-accent tracking-widest whitespace-nowrap opacity-90">SOLAPE</div>
                           </div>
                         </div>
                       )}
                       {/* Abajo */}
                       {rowIdx < rows - 1 && (
                         <div 
-                          className="absolute bottom-0 left-0 right-0 bg-accent/25 border-b border-dashed border-accent/40 z-20 overflow-hidden"
+                          className="absolute bottom-0 left-0 right-0 bg-accent/30 border-b border-dashed border-accent/60 z-20 overflow-hidden"
                           style={{ height: `${overlap * 10}px`, maxHeight: '30%' }}
                         >
                            <div className="h-full w-full flex items-center justify-center">
-                             <div className="text-[7px] font-black text-accent tracking-widest opacity-70 uppercase">Solapamiento inferior</div>
+                             <div className="text-[7px] font-black text-accent tracking-widest opacity-90 uppercase">Solapamiento inferior</div>
                           </div>
                         </div>
                       )}

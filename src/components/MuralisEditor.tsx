@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -47,7 +48,7 @@ export default function MuralisEditor() {
   const [image, setImage] = useState<{ url: string; file: File } | null>(null);
   const [rows, setRows] = useState(3);
   const [cols, setCols] = useState(4);
-  const [overlap, setOverlap] = useState(1.5); // cm
+  const [overlap, setOverlap] = useState(1.5); // cm standard as requested
   const [margins, setMargins] = useState(1); // cm
   const [paperSize, setPaperSize] = useState('A4');
   const [showGuides, setShowGuides] = useState(true);
@@ -123,7 +124,7 @@ export default function MuralisEditor() {
           pdf.addImage(sliceData, 'JPEG', margins * 10, margins * 10, effectivePaperW, effectivePaperH);
 
           // Draw overlap markers
-          pdf.setDrawColor(220, 220, 220);
+          pdf.setDrawColor(200, 200, 200);
           pdf.setLineDashPattern([2, 1], 0);
           
           if (c < cols - 1) {
@@ -137,7 +138,7 @@ export default function MuralisEditor() {
 
           // Metadata
           pdf.setFontSize(7);
-          pdf.setTextColor(180);
+          pdf.setTextColor(150);
           pdf.text(`PANEL ${r + 1}-${c + 1} | SOLAPE: ${overlap}cm | MARGEN: ${margins}cm | MURALIS`, 5, paper.height - 5);
         }
       }
