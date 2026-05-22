@@ -17,7 +17,8 @@ import {
   Settings,
   Scissors,
   Layers,
-  Info
+  Info,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -31,6 +32,15 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { jsPDF } from "jspdf";
+import { useToast } from "@/hooks/use-toast";
+
+const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: string }> = {
+  'A4': { width: 210, height: 297, format: 'a4' },
+  'A3': { width: 297, height: 420, format: 'a3' },
+  'Letter': { width: 215.9, height: 279.4, format: 'letter' },
+  'Legal': { width: 215.9, height: 355.6, format: 'legal' }
+};
 
 export default function MuralisEditor() {
   const [lang, setLang] = useState<Language>('es');
@@ -41,6 +51,8 @@ export default function MuralisEditor() {
   const [paperSize, setPaperSize] = useState('A4');
   const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
 
   const t = translations[lang];
 
@@ -48,8 +60,88 @@ export default function MuralisEditor() {
     setImage({ file, url });
   };
 
-  const handleExport = () => {
-    alert("Exportando PDF de alta resolución con paneles numerados...");
+  const handleExport = async () => {
+    if (!image) return;
+    
+    setIsExporting(true);
+    try {
+      const img = new Image();
+      img.src = image.url;
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const paper = PAPER_DIMENSIONS[paperSize];
+      const pdf = new jsPDF({
+        orientation: paper.width > paper.height ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: paper.format as any
+      });
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Could not initialize canvas");
+
+      // We want to slice the image into rows x cols parts
+      // Sw, Sh are dimensions of one slice on the original image
+      const sw = img.width / cols;
+      const sh = img.height / rows;
+
+      // The overlap in pixels relative to the image
+      // Assuming each panel is roughly the paper size for the overlap calculation
+      const pixelOverlapW = (overlap / paper.width) * sw;
+      const pixelOverlapH = (overlap / paper.height) * sh;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (r > 0 || c > 0) pdf.addPage();
+
+          // Calculate source coordinates with overlap
+          // We take a bit more from the neighbors
+          const sx = Math.max(0, (c * sw) - (c > 0 ? pixelOverlapW : 0));
+          const sy = Math.max(0, (r * sh) - (r > 0 ? pixelOverlapH : 0));
+          
+          // Width and height of the slice including overlap
+          let curSw = sw + (c > 0 ? pixelOverlapW : 0) + (c < cols - 1 ? pixelOverlapW : 0);
+          let curSh = sh + (r > 0 ? pixelOverlapH : 0) + (r < rows - 1 ? pixelOverlapH : 0);
+
+          // Constrain to image bounds
+          const finalSw = Math.min(curSw, img.width - sx);
+          const finalSh = Math.min(curSh, img.height - sy);
+
+          canvas.width = finalSw;
+          canvas.height = finalSh;
+          ctx.drawImage(img, sx, sy, finalSw, finalSh, 0, 0, finalSw, finalSh);
+
+          const sliceData = canvas.toDataURL('image/jpeg', 0.95);
+          
+          // Fit image to page (maintaining aspect ratio or filling?)
+          // For a mural, we usually fill the page to maximize size
+          pdf.addImage(sliceData, 'JPEG', 0, 0, paper.width, paper.height);
+
+          // Add panel number
+          pdf.setFontSize(10);
+          pdf.setTextColor(150);
+          pdf.text(`Panel: ${r + 1}-${c + 1} | Muralis.`, 10, paper.height - 10);
+        }
+      }
+
+      pdf.save(`mural-${Date.now()}.pdf`);
+      toast({
+        title: lang === 'es' ? "¡Éxito!" : "Success!",
+        description: lang === 'es' ? "Tu PDF ha sido generado correctamente." : "Your PDF has been generated successfully.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: lang === 'es' ? "Hubo un error al generar el PDF." : "There was an error generating the PDF.",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -88,9 +180,14 @@ export default function MuralisEditor() {
 
         <div className="flex items-center gap-4">
           <LanguageSelector language={lang} setLanguage={setLang} />
-          <Button variant="default" className="bg-primary hover:bg-primary/90 text-white font-bold gap-2 px-6 shadow-md" onClick={handleExport}>
-            <FileDown className="h-4 w-4" />
-            {t.export}
+          <Button 
+            variant="default" 
+            className="bg-primary hover:bg-primary/90 text-white font-bold gap-2 px-6 shadow-md" 
+            onClick={handleExport}
+            disabled={!image || isExporting}
+          >
+            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+            {isExporting ? (lang === 'es' ? "Procesando..." : "Processing...") : t.export}
           </Button>
         </div>
       </header>
@@ -223,8 +320,8 @@ export default function MuralisEditor() {
                 <span className="text-xs text-muted-foreground font-mono">uds</span>
               </div>
               <p className="text-[10px] leading-relaxed text-muted-foreground">
-                Tamaño de pared estimado: <br/>
-                <span className="text-primary font-bold">~{Math.round(cols * 21)} x {Math.round(rows * 29)} cm</span>
+                {lang === 'es' ? 'Tamaño de pared estimado:' : 'Estimated wall size:'} <br/>
+                <span className="text-primary font-bold">~{Math.round(cols * (PAPER_DIMENSIONS[paperSize]?.width || 21))} x {Math.round(rows * (PAPER_DIMENSIONS[paperSize]?.height || 29))} mm</span>
               </p>
             </div>
           </div>
@@ -240,7 +337,7 @@ export default function MuralisEditor() {
       {/* Bottom Status Bar */}
       <footer className="h-8 border-t border-border bg-white px-4 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-widest z-50 shadow-inner">
         <div className="flex gap-4">
-          <span className="flex items-center gap-1 font-semibold"><Settings className="h-3 w-3" /> Sistema: Online</span>
+          <span className="flex items-center gap-1 font-semibold"><Settings className="h-3 w-3" /> Sistema: Online (Local)</span>
           <span className="flex items-center gap-1"><Grid3X3 className="h-3 w-3" /> Motor: V2.5 Professional</span>
         </div>
         <div className="flex gap-4">
