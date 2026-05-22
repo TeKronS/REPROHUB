@@ -25,7 +25,11 @@ export const translations = {
     language: 'Language',
     savePrompt: 'Save your project before exporting',
     emptyState: 'Upload an image to start creating your mural grid',
-    guides: 'Show Print Guides'
+    guides: 'Show Print Guides',
+    finalMeasures: 'Final Dimensions',
+    blankSpace: 'Blank Space',
+    totalArea: 'Total Area',
+    panelArea: 'Print Area/Panel'
   },
   es: {
     title: 'MURALIS',
@@ -50,6 +54,10 @@ export const translations = {
     language: 'Idioma',
     savePrompt: 'Guarda tu proyecto antes de exportar',
     emptyState: 'Carga una imagen para comenzar a crear tu mural',
-    guides: 'Mostrar Guías de Impresión'
+    guides: 'Mostrar Guías de Impresión',
+    finalMeasures: 'Medidas Finales',
+    blankSpace: 'Espacio en Blanco',
+    totalArea: 'Área Total',
+    panelArea: 'Área Impresión/Panel'
   }
 };
