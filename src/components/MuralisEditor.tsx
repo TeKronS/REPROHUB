@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -37,9 +38,9 @@ import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 
 const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: string }> = {
+  'Letter': { width: 215.9, height: 279.4, format: 'letter' },
   'A4': { width: 210, height: 297, format: 'a4' },
   'A3': { width: 297, height: 420, format: 'a3' },
-  'Letter': { width: 215.9, height: 279.4, format: 'letter' },
   'Legal': { width: 215.9, height: 355.6, format: 'legal' }
 };
 
@@ -49,8 +50,8 @@ export default function MuralisEditor() {
   const [image, setImage] = useState<{ url: string; file: File; width: number; height: number } | null>(null);
   const [rows, setRows] = useState(2);
   const [cols, setCols] = useState(2);
-  const [overlap, setOverlap] = useState(1.5); // cm standard
-  const [margins, setMargins] = useState(1); // cm
+  const [overlap, setOverlap] = useState(1.5); 
+  const [margins, setMargins] = useState(1); 
   const [paperSize, setPaperSize] = useState('Letter');
   const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
@@ -71,19 +72,30 @@ export default function MuralisEditor() {
     const overlapMm = overlap * 10;
 
     const imgAspect = imgW / imgH;
-    const sheetAspect = (printableW - overlapMm) / (printableH - overlapMm);
+    
+    const effectiveSheetW = printableW - overlapMm;
+    const effectiveSheetH = printableH - overlapMm;
 
     if (targetRows) {
-      const calculatedCols = Math.max(1, Math.round((imgAspect * targetRows) / sheetAspect));
+      // Calculate cols needed to cover the aspect ratio
+      const totalH_mm = targetRows * effectiveSheetH + overlapMm;
+      const totalW_mm = totalH_mm * imgAspect;
+      const calculatedCols = Math.max(1, Math.round((totalW_mm - overlapMm) / effectiveSheetW));
       setRows(targetRows);
       setCols(calculatedCols);
     } else if (targetCols) {
-      const calculatedRows = Math.max(1, Math.round(targetCols / (imgAspect / sheetAspect)));
+      // Calculate rows needed to cover the aspect ratio
+      const totalW_mm = targetCols * effectiveSheetW + overlapMm;
+      const totalH_mm = totalW_mm / imgAspect;
+      const calculatedRows = Math.max(1, Math.round((totalH_mm - overlapMm) / effectiveSheetH));
       setCols(targetCols);
       setRows(calculatedRows);
     } else {
+      // Initial fit: start with a reasonable width
       const initialCols = 3;
-      const initialRows = Math.max(1, Math.round(initialCols / (imgAspect / sheetAspect)));
+      const totalW_mm = initialCols * effectiveSheetW + overlapMm;
+      const totalH_mm = totalW_mm / imgAspect;
+      const initialRows = Math.max(1, Math.round((totalH_mm - overlapMm) / effectiveSheetH));
       setCols(initialCols);
       setRows(initialRows);
     }
@@ -118,34 +130,79 @@ export default function MuralisEditor() {
       const printableH = paper.height - (margins * 20);
       const overlapMm = overlap * 10;
 
+      const effectiveSheetW = printableW - overlapMm;
+      const effectiveSheetH = printableH - overlapMm;
+
+      const totalGridW = (cols * effectiveSheetW) + overlapMm;
+      const totalGridH = (rows * effectiveSheetH) + overlapMm;
+
+      const imgAspect = img.width / img.height;
+      const gridAspect = totalGridW / totalGridH;
+
+      let finalW_mm, finalH_mm;
+      let offsetX_mm = 0, offsetY_mm = 0;
+
+      if (imgAspect > gridAspect) {
+        finalW_mm = totalGridW;
+        finalH_mm = totalGridW / imgAspect;
+        offsetY_mm = (totalGridH - finalH_mm) / 2;
+      } else {
+        finalH_mm = totalGridH;
+        finalW_mm = totalGridH * imgAspect;
+        offsetX_mm = (totalGridW - finalW_mm) / 2;
+      }
+
+      const pxPerMm = img.width / finalW_mm;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Canvas fail");
-
-      const totalW_mm = (cols * printableW) - ((cols - 1) * overlapMm);
-      const totalH_mm = (rows * printableH) - ((rows - 1) * overlapMm);
-      const pxPerMmX = img.width / totalW_mm;
-      const pxPerMmY = img.height / totalH_mm;
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (r > 0 || c > 0) pdf.addPage();
 
-          const sx = c * (printableW - overlapMm) * pxPerMmX;
-          const sy = r * (printableH - overlapMm) * pxPerMmY;
-          const sw = printableW * pxPerMmX;
-          const sh = printableH * pxPerMmY;
+          // Workspace top-left for this sheet relative to total grid
+          const sheetLeft_mm = c * effectiveSheetW;
+          const sheetTop_mm = r * effectiveSheetH;
 
-          canvas.width = sw;
-          canvas.height = sh;
+          // Image top-left relative to total grid
+          const imgLeft_mm = offsetX_mm;
+          const imgTop_mm = offsetY_mm;
+
+          // Where the image starts inside this specific sheet
+          const drawInSheetX_mm = Math.max(0, imgLeft_mm - sheetLeft_mm);
+          const drawInSheetY_mm = Math.max(0, imgTop_mm - sheetTop_mm);
+
+          // How much of the image we actually draw on this sheet
+          const drawInSheetW_mm = Math.min(printableW - drawInSheetX_mm, finalW_mm - Math.max(0, sheetLeft_mm - imgLeft_mm));
+          const drawInSheetH_mm = Math.min(printableH - drawInSheetY_mm, finalH_mm - Math.max(0, sheetTop_mm - imgTop_mm));
+
+          // Source rect in pixels
+          const sx = Math.max(0, (sheetLeft_mm - imgLeft_mm) * pxPerMm);
+          const sy = Math.max(0, (sheetTop_mm - imgTop_mm) * pxPerMm);
+          const sw = drawInSheetW_mm * pxPerMm;
+          const sh = drawInSheetH_mm * pxPerMm;
+
+          canvas.width = Math.max(1, sw);
+          canvas.height = Math.max(1, sh);
           ctx.fillStyle = "white";
-          ctx.fillRect(0, 0, sw, sh);
-          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          if (sw > 0 && sh > 0) {
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            pdf.addImage(
+              dataUrl, 
+              'JPEG', 
+              (margins * 10) + drawInSheetX_mm, 
+              (margins * 10) + drawInSheetY_mm, 
+              drawInSheetW_mm, 
+              drawInSheetH_mm
+            );
+          }
 
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-          pdf.addImage(dataUrl, 'JPEG', margins * 10, margins * 10, printableW, printableH);
-
-          pdf.setDrawColor(200);
+          // Guides
+          pdf.setDrawColor(220);
           pdf.setLineDashPattern([2, 2], 0);
           if (c < cols - 1) {
             const gx = (margins * 10) + (printableW - overlapMm);
@@ -157,7 +214,7 @@ export default function MuralisEditor() {
           }
 
           pdf.setFontSize(7);
-          pdf.setTextColor(150);
+          pdf.setTextColor(180);
           pdf.text(`MURALIS | PANEL ${r+1}-${c+1} | ${paperSize} | SOLAPE ${overlap}cm`, margins * 10, paper.height - (margins * 5));
         }
       }
