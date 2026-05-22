@@ -33,7 +33,7 @@ export function MuralCanvas({
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        setZoom(prev => Math.min(Math.max(0.2, prev - e.deltaY * 0.001), 4));
+        setZoom(prev => Math.min(Math.max(0.1, prev - e.deltaY * 0.001), 5));
       }
     };
     const current = containerRef.current;
@@ -61,7 +61,7 @@ export function MuralCanvas({
     <div 
       ref={containerRef}
       className={cn(
-        "relative flex-1 bg-[#f0f2f5] overflow-hidden flex items-center justify-center select-none",
+        "relative flex-1 bg-[#f9fafb] overflow-hidden flex items-center justify-center select-none border border-border/40 rounded-2xl",
         isDragging ? "cursor-grabbing" : "cursor-grab"
       )}
       onMouseDown={handleMouseDown}
@@ -73,14 +73,14 @@ export function MuralCanvas({
         className="relative will-change-transform"
         style={{ 
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+          transition: isDragging ? 'none' : 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)'
         }}
       >
-        <div className="relative shadow-xl bg-white border border-border rounded-sm overflow-hidden">
+        <div className="relative shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] bg-white border border-border/80 rounded-sm overflow-hidden p-0">
           <img 
             src={imageUrl} 
             alt="Mural" 
-            className="max-h-[70vh] w-auto block" 
+            className="max-h-[85vh] w-auto block" 
             draggable={false}
           />
           
@@ -93,25 +93,32 @@ export function MuralCanvas({
               const r = Math.floor(i / cols);
               const c = i % cols;
               return (
-                <div key={i} className={cn("relative", showGuides ? "border-[1.5px] border-primary/60" : "border-0")}>
+                <div key={i} className={cn(
+                  "relative transition-colors duration-300", 
+                  showGuides ? "border-[2px] border-primary/50" : "border-0"
+                )}>
                   {showGuides && (
                     <>
-                      <div className="absolute top-2 left-2 bg-white/90 px-1.5 py-0.5 rounded border border-primary/20 shadow-sm">
-                        <span className="text-[10px] font-black font-mono text-primary">{r+1}-{c+1}</span>
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md border border-primary/30 shadow-md">
+                        <span className="text-[12px] font-black font-mono text-primary leading-none">{r+1}-{c+1}</span>
                       </div>
                       
-                      {/* Overlap Visualization */}
+                      {/* Overlap Visualization (Right) */}
                       {c < cols - 1 && (
-                        <div className="absolute right-0 top-0 bottom-0 bg-accent/15 border-r border-dashed border-accent/30" 
-                             style={{ width: `${overlap * 10}px`, maxWidth: '25%' }} />
+                        <div className="absolute right-0 top-0 bottom-0 bg-accent/20 border-r border-dashed border-accent/40" 
+                             style={{ width: `${overlap * 12}px`, maxWidth: '30%' }}>
+                          <div className="absolute -top-4 right-0 text-[8px] font-bold text-accent uppercase">Solape</div>
+                        </div>
                       )}
+                      {/* Overlap Visualization (Bottom) */}
                       {r < rows - 1 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-accent/15 border-b border-dashed border-accent/30" 
-                             style={{ height: `${overlap * 10}px`, maxHeight: '25%' }} />
+                        <div className="absolute bottom-0 left-0 right-0 bg-accent/20 border-b border-dashed border-accent/40" 
+                             style={{ height: `${overlap * 12}px`, maxHeight: '30%' }} />
                       )}
                       
-                      {/* Margins Visualization */}
-                      <div className="absolute inset-0 border-black/5" style={{ borderWidth: `${margins * 4}px` }} />
+                      {/* Margins Visualization (Internal Safe Area) */}
+                      <div className="absolute inset-0 border-black/10" 
+                           style={{ borderWidth: `${margins * 6}px` }} />
                     </>
                   )}
                 </div>
@@ -121,8 +128,16 @@ export function MuralCanvas({
         </div>
       </div>
 
-      <div className="absolute bottom-6 right-6 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border shadow-sm text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-        CTRL + Scroll: Zoom ({Math.round(zoom * 100)}%) | Arrastrar para mover
+      <div className="absolute bottom-6 left-6 flex items-center gap-4 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-border shadow-lg animate-fade-in">
+        <div className="flex flex-col">
+          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Navegación</span>
+          <span className="text-[10px] font-bold text-foreground">CTRL + Scroll: Zoom • Click + Arrastrar: Mover</span>
+        </div>
+        <Separator orientation="vertical" className="h-6" />
+        <div className="flex flex-col">
+          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Zoom</span>
+          <span className="text-[10px] font-bold text-primary">{Math.round(zoom * 100)}%</span>
+        </div>
       </div>
     </div>
   );

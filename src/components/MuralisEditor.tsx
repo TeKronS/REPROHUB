@@ -19,7 +19,8 @@ import {
   Info,
   Loader2,
   Maximize,
-  Link2
+  Link2,
+  Image as ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -77,7 +78,6 @@ export default function MuralisEditor() {
       setCols(targetCols);
       setRows(calculatedRows);
     } else {
-      // Initial calculation
       const initialCols = 3;
       const initialRows = Math.max(1, Math.round(initialCols / (imgAspect / sheetAspect)));
       setCols(initialCols);
@@ -114,15 +114,12 @@ export default function MuralisEditor() {
       const printableH = paper.height - (margins * 20);
       const overlapMm = overlap * 10;
 
-      // Real physical dimensions of the full mural
-      const totalW_mm = (cols * printableW) - ((cols - 1) * overlapMm);
-      const totalH_mm = (rows * printableH) - ((rows - 1) * overlapMm);
-
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Canvas fail");
 
-      // Pixels per millimeter
+      const totalW_mm = (cols * printableW) - ((cols - 1) * overlapMm);
+      const totalH_mm = (rows * printableH) - ((rows - 1) * overlapMm);
       const pxPerMmX = img.width / totalW_mm;
       const pxPerMmY = img.height / totalH_mm;
 
@@ -144,8 +141,7 @@ export default function MuralisEditor() {
           const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
           pdf.addImage(dataUrl, 'JPEG', margins * 10, margins * 10, printableW, printableH);
 
-          // Technical indicators
-          pdf.setDrawColor(220);
+          pdf.setDrawColor(200);
           pdf.setLineDashPattern([2, 2], 0);
           if (c < cols - 1) {
             const gx = (margins * 10) + (printableW - overlapMm);
@@ -157,8 +153,8 @@ export default function MuralisEditor() {
           }
 
           pdf.setFontSize(7);
-          pdf.setTextColor(180);
-          pdf.text(`MURALIS | PANEL ${r+1}-${c+1} | ${paperSize} | OVERLAP ${overlap}cm`, margins * 10, paper.height - (margins * 5));
+          pdf.setTextColor(150);
+          pdf.text(`MURALIS | PANEL ${r+1}-${c+1} | ${paperSize} | SOLAPE ${overlap}cm`, margins * 10, paper.height - (margins * 5));
         }
       }
 
@@ -218,9 +214,9 @@ export default function MuralisEditor() {
       </header>
 
       <main className="flex-1 flex overflow-hidden">
-        <section className="flex-1 relative bg-[#f8f9fa] overflow-hidden flex items-center justify-center">
+        <section className="flex-1 relative bg-[#fcfcfc] overflow-hidden flex items-center justify-center">
           {!image ? (
-            <div className="max-w-lg w-full p-8">
+            <div className="max-w-lg w-full p-8 animate-fade-in">
               <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
             </div>
           ) : (
@@ -248,9 +244,17 @@ export default function MuralisEditor() {
               <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Settings2 className="h-3 w-3" /> {t.gridSettings}
               </h2>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setImage(null)}>
-                <Undo2 className="h-4 w-4" />
-              </Button>
+              {image && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 text-[10px] font-bold uppercase gap-2 border-dashed border-primary/30 hover:bg-primary/5 hover:text-primary transition-all" 
+                  onClick={() => setImage(null)}
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  {lang === 'es' ? 'Cambiar' : 'Change'}
+                </Button>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -328,7 +332,7 @@ export default function MuralisEditor() {
               </div>
             </div>
 
-            <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+            <div className="p-4 bg-muted/20 rounded-xl border border-border/50">
               <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-1">{t.totalPanels}</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-black text-primary">{rows * cols}</span>
