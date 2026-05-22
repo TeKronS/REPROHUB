@@ -1,0 +1,55 @@
+
+export type Language = 'en' | 'es';
+
+export const translations = {
+  en: {
+    title: 'MURALIS',
+    upload: 'Upload Image',
+    dragDrop: 'Drag and drop your image here',
+    gridSettings: 'Grid Settings',
+    rows: 'Rows',
+    columns: 'Columns',
+    paperSize: 'Paper Size',
+    overlap: 'Overlap (cm)',
+    margins: 'Margins (cm)',
+    export: 'Export PDF',
+    preview: 'Mockup Preview',
+    editor: 'Canvas Editor',
+    reset: 'Reset',
+    scale: 'Scale',
+    physicalDimensions: 'Physical Dimensions',
+    width: 'Width',
+    height: 'Height',
+    units: 'Units',
+    totalPanels: 'Total Panels',
+    language: 'Language',
+    savePrompt: 'Save your project before exporting',
+    emptyState: 'Upload an image to start creating your mural grid',
+    guides: 'Show Print Guides'
+  },
+  es: {
+    title: 'MURALIS',
+    upload: 'Cargar Imagen',
+    dragDrop: 'Arrastra y suelta tu imagen aquí',
+    gridSettings: 'Ajustes de Cuadrícula',
+    rows: 'Filas',
+    columns: 'Columnas',
+    paperSize: 'Tamaño de Papel',
+    overlap: 'Solapamiento (cm)',
+    margins: 'Márgenes (cm)',
+    export: 'Exportar PDF',
+    preview: 'Vista Previa de Maqueta',
+    editor: 'Editor de Lienzo',
+    reset: 'Restablecer',
+    scale: 'Escala',
+    physicalDimensions: 'Dimensiones Físicas',
+    width: 'Ancho',
+    height: 'Alto',
+    units: 'Unidades',
+    totalPanels: 'Paneles Totales',
+    language: 'Idioma',
+    savePrompt: 'Guarda tu proyecto antes de exportar',
+    emptyState: 'Carga una imagen para comenzar a crear tu mural',
+    guides: 'Mostrar Guías de Impresión'
+  }
+};

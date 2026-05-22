@@ -1,3 +1,6 @@
+
+import MuralisEditor from "@/components/MuralisEditor";
+
 export default function Home() {
-  return <></>;
+  return <MuralisEditor />;
 }

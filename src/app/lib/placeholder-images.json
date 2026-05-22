@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "modern-living-room",
+      "description": "A modern minimalist living room with a large empty wall for mural previewing.",
+      "imageUrl": "https://picsum.photos/seed/mural1/1200/800",
+      "imageHint": "modern living room wall"
+    },
+    {
+      "id": "creative-studio",
+      "description": "A bright creative studio space with white brick walls.",
+      "imageUrl": "https://picsum.photos/seed/mural2/1200/800",
+      "imageHint": "creative studio interior"
+    },
+    {
+      "id": "sample-art",
+      "description": "Abstract colorful botanical art for testing the grid system.",
+      "imageUrl": "https://picsum.photos/seed/art1/800/1200",
+      "imageHint": "abstract botanical art"
+    }
+  ]
+}
