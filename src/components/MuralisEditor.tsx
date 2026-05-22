@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUploader } from "./ImageUploader";
@@ -17,7 +18,8 @@ import {
   Layers,
   Info,
   Loader2,
-  Maximize
+  Maximize,
+  Link2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -43,21 +45,53 @@ const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: 
 
 export default function MuralisEditor() {
   const [lang, setLang] = useState<Language>('es');
-  const [image, setImage] = useState<{ url: string; file: File } | null>(null);
-  const [rows, setRows] = useState(3);
-  const [cols, setCols] = useState(4);
+  const [image, setImage] = useState<{ url: string; file: File; width: number; height: number } | null>(null);
+  const [rows, setRows] = useState(2);
+  const [cols, setCols] = useState(2);
   const [overlap, setOverlap] = useState(1.5); // cm standard
   const [margins, setMargins] = useState(1); // cm
   const [paperSize, setPaperSize] = useState('A4');
   const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
   const [isExporting, setIsExporting] = useState(false);
+  const [lockAspect, setLockAspect] = useState(true);
   const { toast } = useToast();
 
   const t = translations[lang];
 
+  const calculateAutoGrid = useCallback((imgW: number, imgH: number, targetRows?: number, targetCols?: number) => {
+    const paper = PAPER_DIMENSIONS[paperSize];
+    const printableW = paper.width - (margins * 20);
+    const printableH = paper.height - (margins * 20);
+    const overlapMm = overlap * 10;
+
+    const imgAspect = imgW / imgH;
+    const sheetAspect = (printableW - overlapMm) / (printableH - overlapMm);
+
+    if (targetRows) {
+      const calculatedCols = Math.max(1, Math.round((imgAspect * targetRows) / sheetAspect));
+      setRows(targetRows);
+      setCols(calculatedCols);
+    } else if (targetCols) {
+      const calculatedRows = Math.max(1, Math.round(targetCols / (imgAspect / sheetAspect)));
+      setCols(targetCols);
+      setRows(calculatedRows);
+    } else {
+      // Initial calculation
+      const initialCols = 3;
+      const initialRows = Math.max(1, Math.round(initialCols / (imgAspect / sheetAspect)));
+      setCols(initialCols);
+      setRows(initialRows);
+    }
+  }, [paperSize, margins, overlap]);
+
   const handleImageUpload = (file: File, url: string) => {
-    setImage({ file, url });
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      setImage({ file, url, width: img.width, height: img.height });
+      calculateAutoGrid(img.width, img.height);
+    };
   };
 
   const handleExport = async () => {
@@ -67,36 +101,28 @@ export default function MuralisEditor() {
     try {
       const img = new Image();
       img.src = image.url;
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
+      await new Promise((resolve) => img.onload = resolve);
 
       const paper = PAPER_DIMENSIONS[paperSize];
-      const isLandscape = img.width > img.height;
       const pdf = new jsPDF({
-        orientation: isLandscape ? 'l' : 'p',
+        orientation: paper.width > paper.height ? 'l' : 'p',
         unit: 'mm',
         format: paper.format as any
       });
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error("Could not initialize canvas");
-
-      // Printable area per sheet (mm)
       const printableW = paper.width - (margins * 20);
       const printableH = paper.height - (margins * 20);
       const overlapMm = overlap * 10;
 
-      // Calculate total mural physical size to determine scaling
-      // Each sheet contributes (printableW - overlap) except the last one.
+      // Real physical dimensions of the full mural
       const totalW_mm = (cols * printableW) - ((cols - 1) * overlapMm);
       const totalH_mm = (rows * printableH) - ((rows - 1) * overlapMm);
 
-      // Mapping image to physical space (pixels per mm)
-      // This ensures the image stretches perfectly over the grid without gaps.
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Canvas fail");
+
+      // Pixels per millimeter
       const pxPerMmX = img.width / totalW_mm;
       const pxPerMmY = img.height / totalH_mm;
 
@@ -104,8 +130,6 @@ export default function MuralisEditor() {
         for (let c = 0; c < cols; c++) {
           if (r > 0 || c > 0) pdf.addPage();
 
-          // Pixel coordinates for current slice in the source image
-          // Each sheet starts at: index * (step)
           const sx = c * (printableW - overlapMm) * pxPerMmX;
           const sy = r * (printableH - overlapMm) * pxPerMmY;
           const sw = printableW * pxPerMmX;
@@ -113,66 +137,47 @@ export default function MuralisEditor() {
 
           canvas.width = sw;
           canvas.height = sh;
-          
-          // Background to white to avoid transparent/black edges
           ctx.fillStyle = "white";
           ctx.fillRect(0, 0, sw, sh);
-          
-          // Draw the slice
           ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
 
-          const sliceData = canvas.toDataURL('image/jpeg', 0.9);
-          
-          // Add image to PDF centered in margins
-          pdf.addImage(sliceData, 'JPEG', margins * 10, margins * 10, printableW, printableH);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+          pdf.addImage(dataUrl, 'JPEG', margins * 10, margins * 10, printableW, printableH);
 
-          // Technical guides for assembly
-          pdf.setDrawColor(200, 200, 200);
+          // Technical indicators
+          pdf.setDrawColor(220);
           pdf.setLineDashPattern([2, 2], 0);
-          
-          // Right guide
           if (c < cols - 1) {
-             const guideX = (margins * 10) + (printableW - overlapMm);
-             pdf.line(guideX, margins * 10, guideX, margins * 10 + printableH);
+            const gx = (margins * 10) + (printableW - overlapMm);
+            pdf.line(gx, margins * 10, gx, margins * 10 + printableH);
           }
-          // Bottom guide
           if (r < rows - 1) {
-            const guideY = (margins * 10) + (printableH - overlapMm);
-            pdf.line(margins * 10, guideY, margins * 10 + printableW, guideY);
+            const gy = (margins * 10) + (printableH - overlapMm);
+            pdf.line(margins * 10, gy, margins * 10 + printableW, gy);
           }
 
-          // Metadata footer
           pdf.setFontSize(7);
-          pdf.setTextColor(150);
-          pdf.text(`PANEL ${r + 1}-${c + 1} | MURALIS | PAPEL: ${paperSize} | SOLAPE: ${overlap}cm`, margins * 10, paper.height - (margins * 5));
+          pdf.setTextColor(180);
+          pdf.text(`MURALIS | PANEL ${r+1}-${c+1} | ${paperSize} | OVERLAP ${overlap}cm`, margins * 10, paper.height - (margins * 5));
         }
       }
 
-      pdf.save(`muralis-${Date.now()}.pdf`);
-      toast({
-        title: lang === 'es' ? "¡Mural listo!" : "Mural ready!",
-        description: lang === 'es' ? "El PDF se ha generado correctamente." : "PDF has been generated successfully.",
-      });
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: lang === 'es' ? "Ocurrió un error al procesar la imagen." : "An error occurred while processing the image.",
-      });
+      pdf.save(`muralis-grid-${Date.now()}.pdf`);
+      toast({ title: t.export, description: "PDF generado localmente con éxito." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error", description: "No se pudo generar el PDF." });
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen w-full font-body bg-[#fafafa] text-foreground">
-      {/* Top Navbar */}
-      <header className="h-16 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
+    <div className="flex flex-col h-screen w-full font-body bg-white text-foreground">
+      <header className="h-16 border-b border-border bg-white flex items-center justify-between px-6 z-50">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/10">
-              <Layers className="text-white h-6 w-6" />
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm">
+              <Layers className="text-white h-5 w-5" />
             </div>
             <h1 className="text-2xl font-headline font-black tracking-tighter text-primary">
               MURALIS<span className="text-accent">.</span>
@@ -202,23 +207,20 @@ export default function MuralisEditor() {
         <div className="flex items-center gap-4">
           <LanguageSelector language={lang} setLanguage={setLang} />
           <Button 
-            variant="default" 
-            className="bg-primary hover:bg-primary/90 text-white font-black gap-2 h-11 px-8 shadow-xl shadow-primary/10 transition-all active:scale-95" 
+            className="bg-primary hover:bg-primary/90 text-white font-black gap-2 h-11 px-8 rounded-xl" 
             onClick={handleExport}
             disabled={!image || isExporting}
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-5 w-5" />}
-            {isExporting ? (lang === 'es' ? "PROCESANDO..." : "PROCESSING...") : t.export}
+            {isExporting ? "..." : t.export}
           </Button>
         </div>
       </header>
 
-      {/* Main Layout */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Central Canvas Area */}
-        <section className="flex-1 relative bg-[#f4f4f5] overflow-hidden flex items-center justify-center">
+        <section className="flex-1 relative bg-[#f8f9fa] overflow-hidden flex items-center justify-center">
           {!image ? (
-            <div className="max-w-lg w-full p-8 animate-fade-in">
+            <div className="max-w-lg w-full p-8">
               <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
             </div>
           ) : (
@@ -234,142 +236,108 @@ export default function MuralisEditor() {
                   showGuides={showGuides} 
                 />
               ) : (
-                <div className="w-full h-full animate-scale-in">
-                  <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
-                </div>
+                <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
               )}
             </div>
           )}
         </section>
 
-        {/* Right Adjustment Panel */}
-        <aside className="w-85 border-l border-border bg-white overflow-y-auto custom-scrollbar shadow-2xl z-40">
-          <div className="p-8 space-y-10">
+        <aside className="w-80 border-l border-border bg-white overflow-y-auto">
+          <div className="p-6 space-y-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-[11px] font-headline font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-primary" /> {t.gridSettings}
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Settings2 className="h-3 w-3" /> {t.gridSettings}
               </h2>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => setImage(null)}>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setImage(null)}>
                 <Undo2 className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="space-y-8">
-              <div className="space-y-5">
-                <div className="flex justify-between items-end">
-                  <Label className="text-[11px] font-black uppercase text-muted-foreground">{t.rows}</Label>
-                  <span className="text-sm font-mono text-primary font-black bg-primary/5 px-2 py-0.5 rounded">{rows}</span>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10">
+                <div className="flex items-center gap-2">
+                  <Link2 className="h-3 w-3 text-primary" />
+                  <Label className="text-[10px] font-black uppercase cursor-pointer" htmlFor="lock-aspect">Proporción Bloqueada</Label>
+                </div>
+                <Switch id="lock-aspect" checked={lockAspect} onCheckedChange={setLockAspect} />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.rows}</Label>
+                  <span className="text-xs font-black text-primary">{rows}</span>
                 </div>
                 <Slider 
                   value={[rows]} 
-                  onValueChange={(v) => setRows(v[0])} 
-                  min={1} 
-                  max={15} 
-                  step={1} 
+                  onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, v[0]) : setRows(v[0])} 
+                  min={1} max={15} step={1} 
                 />
               </div>
 
-              <div className="space-y-5">
-                <div className="flex justify-between items-end">
-                  <Label className="text-[11px] font-black uppercase text-muted-foreground">{t.columns}</Label>
-                  <span className="text-sm font-mono text-primary font-black bg-primary/5 px-2 py-0.5 rounded">{cols}</span>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.columns}</Label>
+                  <span className="text-xs font-black text-primary">{cols}</span>
                 </div>
                 <Slider 
                   value={[cols]} 
-                  onValueChange={(v) => setCols(v[0])} 
-                  min={1} 
-                  max={15} 
-                  step={1} 
+                  onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, undefined, v[0]) : setCols(v[0])} 
+                  min={1} max={15} step={1} 
                 />
               </div>
 
               <Separator />
 
-              <div className="space-y-5">
-                <div className="flex justify-between items-center">
-                  <Label className="text-[11px] font-black uppercase text-muted-foreground">{t.paperSize}</Label>
-                  <Info className="h-3 w-3 text-muted-foreground/60" />
-                </div>
-                <Select value={paperSize} onValueChange={setPaperSize}>
-                  <SelectTrigger className="bg-white border-border h-11 text-xs font-bold rounded-xl">
-                    <SelectValue placeholder="Papel" />
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.paperSize}</Label>
+                <Select value={paperSize} onValueChange={(v) => { setPaperSize(v); if(image) calculateAutoGrid(image.width, image.height); }}>
+                  <SelectTrigger className="h-10 rounded-lg text-xs font-bold">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A4" className="font-bold">A4 (210 x 297 mm)</SelectItem>
-                    <SelectItem value="A3" className="font-bold">A3 (297 x 420 mm)</SelectItem>
-                    <SelectItem value="Letter" className="font-bold">Carta (8.5 x 11 in)</SelectItem>
-                    <SelectItem value="Legal" className="font-bold">Oficio (8.5 x 14 in)</SelectItem>
+                    {Object.keys(PAPER_DIMENSIONS).map(key => (
+                      <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-5">
-                <div className="flex justify-between items-end">
-                  <Label className="text-[11px] font-black uppercase text-muted-foreground flex items-center gap-2">
-                    <Scissors className="h-4 w-4 text-accent" /> {t.overlap}
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2">
+                    <Scissors className="h-3 w-3" /> {t.overlap}
                   </Label>
-                  <span className="text-sm font-mono text-accent font-black bg-accent/5 px-2 py-0.5 rounded">{overlap} cm</span>
+                  <span className="text-xs font-black text-accent">{overlap} cm</span>
                 </div>
-                <Slider 
-                  value={[overlap]} 
-                  onValueChange={(v) => setOverlap(v[0])} 
-                  min={0} 
-                  max={5} 
-                  step={0.1} 
-                />
+                <Slider value={[overlap]} onValueChange={(v) => setOverlap(v[0])} min={0} max={5} step={0.1} />
               </div>
 
-              <div className="space-y-5">
-                <div className="flex justify-between items-end">
-                  <Label className="text-[11px] font-black uppercase text-muted-foreground flex items-center gap-2">
-                    <Maximize className="h-4 w-4 text-primary" /> {t.margins}
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2">
+                    <Maximize className="h-3 w-3" /> {t.margins}
                   </Label>
-                  <span className="text-sm font-mono text-primary font-black bg-primary/5 px-2 py-0.5 rounded">{margins} cm</span>
+                  <span className="text-xs font-black text-primary">{margins} cm</span>
                 </div>
-                <Slider 
-                  value={[margins]} 
-                  onValueChange={(v) => setMargins(v[0])} 
-                  min={0} 
-                  max={3} 
-                  step={0.5} 
-                />
+                <Slider value={[margins]} onValueChange={(v) => setMargins(v[0])} min={0} max={3} step={0.5} />
               </div>
 
-              <div className="pt-4 space-y-5">
-                <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border border-border/50">
-                  <Label className="text-[11px] font-black uppercase text-muted-foreground cursor-pointer" htmlFor="guides-switch">
-                    {t.guides}
-                  </Label>
-                  <Switch 
-                    id="guides-switch" 
-                    checked={showGuides} 
-                    onCheckedChange={setShowGuides} 
-                  />
-                </div>
+              <div className="flex items-center justify-between pt-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer" htmlFor="guides">{t.guides}</Label>
+                <Switch id="guides" checked={showGuides} onCheckedChange={setShowGuides} />
               </div>
             </div>
 
-            <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl space-y-2">
-              <h3 className="text-[10px] font-black text-primary uppercase tracking-widest">{t.totalPanels}</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-black text-primary leading-none">{rows * cols}</span>
-                <span className="text-xs text-muted-foreground font-black uppercase">Unidades</span>
+            <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-1">{t.totalPanels}</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-primary">{rows * cols}</span>
+                <span className="text-[10px] text-muted-foreground font-black uppercase">Unidades</span>
               </div>
             </div>
           </div>
         </aside>
       </main>
-
-      <footer className="h-10 border-t border-border bg-white px-6 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-widest z-50">
-        <div className="flex gap-6">
-          <span className="flex items-center gap-2 font-black text-primary"><Settings className="h-3 w-3" /> MURALIS ENGINE</span>
-          <span className="opacity-60">Procesamiento Local Activo</span>
-        </div>
-        <div className="flex gap-6">
-          <span className="font-black text-accent">{paperSize} FORMAT</span>
-          <span className="text-primary font-black">STABLE</span>
-        </div>
-      </footer>
     </div>
   );
 }
