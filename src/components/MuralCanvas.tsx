@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -33,20 +32,20 @@ export function MuralCanvas({ imageUrl, rows, cols, overlap, showGuides }: Mural
   return (
     <div 
       ref={containerRef}
-      className="relative flex-1 bg-muted/30 overflow-hidden flex items-center justify-center p-12"
+      className="relative flex-1 bg-[#f5f5f5] overflow-hidden flex items-center justify-center p-12"
     >
       <div 
-        className="relative shadow-2xl transition-transform duration-200 ease-out bg-white"
+        className="relative shadow-[0_40px_100px_-20px_rgba(0,0,0,0.2)] transition-transform duration-300 ease-out bg-white"
         style={{ transform: `scale(${zoom})` }}
       >
         <img 
           src={imageUrl} 
           alt="Mural asset" 
-          className="max-h-[80vh] w-auto block select-none" 
+          className="max-h-[75vh] w-auto block select-none border-8 border-white" 
         />
         
-        {/* Grid Overlay - Enhanced visibility */}
-        <div className="absolute inset-0 grid pointer-events-none" 
+        {/* Grid Overlay */}
+        <div className="absolute inset-[8px] grid pointer-events-none" 
              style={{ 
                gridTemplateRows: `repeat(${rows}, 1fr)`,
                gridTemplateColumns: `repeat(${cols}, 1fr)` 
@@ -55,19 +54,25 @@ export function MuralCanvas({ imageUrl, rows, cols, overlap, showGuides }: Mural
             <div 
               key={i} 
               className={cn(
-                "relative",
-                showGuides ? "border-2 border-primary/80" : "border-0"
+                "relative group",
+                showGuides ? "border border-primary/40" : "border-0"
               )}
             >
               {showGuides && (
                 <>
-                  <span className="absolute top-1 left-1 text-[11px] font-black font-mono text-white bg-primary px-2 py-0.5 rounded shadow-md z-10">
+                  <span className="absolute top-1 left-1 text-[9px] font-black font-mono text-white bg-primary/80 px-1.5 py-0.5 rounded backdrop-blur-sm z-10">
                     {Math.floor(i / cols) + 1}-{ (i % cols) + 1}
                   </span>
-                  {/* Overlap visualization - More prominent */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                    <div className="w-[95%] h-[95%] border-2 border-accent border-dashed" />
-                  </div>
+                  
+                  {/* Overlap Visualizers - Stronger & Clearer */}
+                  {/* Right Overlap */}
+                  {(i % cols) < cols - 1 && (
+                    <div className="absolute right-0 top-0 bottom-0 w-[15%] border-r border-accent/60 border-dashed bg-accent/5" />
+                  )}
+                  {/* Bottom Overlap */}
+                  {Math.floor(i / cols) < rows - 1 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[15%] border-b border-accent/60 border-dashed bg-accent/5" />
+                  )}
                 </>
               )}
             </div>
@@ -75,8 +80,15 @@ export function MuralCanvas({ imageUrl, rows, cols, overlap, showGuides }: Mural
         </div>
       </div>
 
+      {/* Control Hints */}
+      <div className="absolute bottom-6 left-6 flex items-center gap-4">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-border shadow-lg text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" /> Solapamiento Visible
+        </div>
+      </div>
+
       {/* Zoom indicator */}
-      <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold font-mono border border-border shadow-xl text-primary">
+      <div className="absolute bottom-6 right-6 bg-primary px-5 py-2 rounded-full text-[10px] font-black font-mono shadow-2xl text-white tracking-widest border border-white/20">
         ZOOM: {Math.round(zoom * 100)}%
       </div>
     </div>

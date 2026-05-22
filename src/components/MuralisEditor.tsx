@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -18,7 +17,8 @@ import {
   Scissors,
   Layers,
   Info,
-  Loader2
+  Loader2,
+  Maximize
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -47,7 +47,8 @@ export default function MuralisEditor() {
   const [image, setImage] = useState<{ url: string; file: File } | null>(null);
   const [rows, setRows] = useState(3);
   const [cols, setCols] = useState(4);
-  const [overlap, setOverlap] = useState(2);
+  const [overlap, setOverlap] = useState(1.5); // cm
+  const [margins, setMargins] = useState(1); // cm
   const [paperSize, setPaperSize] = useState('A4');
   const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
@@ -73,8 +74,9 @@ export default function MuralisEditor() {
       });
 
       const paper = PAPER_DIMENSIONS[paperSize];
+      const isLandscape = img.width > img.height;
       const pdf = new jsPDF({
-        orientation: paper.width > paper.height ? 'landscape' : 'portrait',
+        orientation: isLandscape ? 'l' : 'p',
         unit: 'mm',
         format: paper.format as any
       });
@@ -83,30 +85,35 @@ export default function MuralisEditor() {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Could not initialize canvas");
 
-      // We want to slice the image into rows x cols parts
-      // Sw, Sh are dimensions of one slice on the original image
+      // Dimensions of the printable area
+      const printW = paper.width - (margins * 20);
+      const printH = paper.height - (margins * 20);
+
+      // Core slice size on the original image
       const sw = img.width / cols;
       const sh = img.height / rows;
 
-      // The overlap in pixels relative to the image
-      // Assuming each panel is roughly the paper size for the overlap calculation
-      const pixelOverlapW = (overlap / paper.width) * sw;
-      const pixelOverlapH = (overlap / paper.height) * sh;
+      // Ratio of pixels to mm in the final print (per panel)
+      const pxPerMmW = sw / printW;
+      const pxPerMmH = sh / printH;
+
+      // Overlap in pixels
+      const overlapPxW = overlap * 10 * pxPerMmW;
+      const overlapPxH = overlap * 10 * pxPerMmH;
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (r > 0 || c > 0) pdf.addPage();
 
-          // Calculate source coordinates with overlap
-          // We take a bit more from the neighbors
-          const sx = Math.max(0, (c * sw) - (c > 0 ? pixelOverlapW : 0));
-          const sy = Math.max(0, (r * sh) - (r > 0 ? pixelOverlapH : 0));
+          // Source coordinates including bleed for overlap
+          const sx = Math.max(0, (c * sw) - (c > 0 ? overlapPxW : 0));
+          const sy = Math.max(0, (r * sh) - (r > 0 ? overlapPxH : 0));
           
-          // Width and height of the slice including overlap
-          let curSw = sw + (c > 0 ? pixelOverlapW : 0) + (c < cols - 1 ? pixelOverlapW : 0);
-          let curSh = sh + (r > 0 ? pixelOverlapH : 0) + (r < rows - 1 ? pixelOverlapH : 0);
+          // Source dimensions including extra area for overlap
+          let curSw = sw + (c > 0 ? overlapPxW : 0) + (c < cols - 1 ? overlapPxW : 0);
+          let curSh = sh + (r > 0 ? overlapPxH : 0) + (r < rows - 1 ? overlapPxH : 0);
 
-          // Constrain to image bounds
+          // Final constraints
           const finalSw = Math.min(curSw, img.width - sx);
           const finalSh = Math.min(curSh, img.height - sy);
 
@@ -116,28 +123,40 @@ export default function MuralisEditor() {
 
           const sliceData = canvas.toDataURL('image/jpeg', 0.95);
           
-          // Fit image to page (maintaining aspect ratio or filling?)
-          // For a mural, we usually fill the page to maximize size
-          pdf.addImage(sliceData, 'JPEG', 0, 0, paper.width, paper.height);
+          // Draw image centered in the printable area
+          pdf.addImage(sliceData, 'JPEG', margins * 10, margins * 10, printW, printH);
 
-          // Add panel number
-          pdf.setFontSize(10);
+          // Draw Cut/Overlap Guides
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineDashPattern([2, 2], 0);
+          
+          // Vertical guide (left side if not first column)
+          if (c > 0) {
+            pdf.line(margins * 10 + (overlap * 10), margins * 10, margins * 10 + (overlap * 10), margins * 10 + printH);
+          }
+          // Horizontal guide (top side if not first row)
+          if (r > 0) {
+            pdf.line(margins * 10, margins * 10 + (overlap * 10), margins * 10 + printW, margins * 10 + (overlap * 10));
+          }
+
+          // Meta info
+          pdf.setFontSize(8);
           pdf.setTextColor(150);
-          pdf.text(`Panel: ${r + 1}-${c + 1} | Muralis.`, 10, paper.height - 10);
+          pdf.text(`PANEL: ${r + 1}-${c + 1} | SOLAPE: ${overlap}cm | MURALIS.`, 10, paper.height - 5);
         }
       }
 
-      pdf.save(`mural-${Date.now()}.pdf`);
+      pdf.save(`muralis-${Date.now()}.pdf`);
       toast({
         title: lang === 'es' ? "¡Éxito!" : "Success!",
-        description: lang === 'es' ? "Tu PDF ha sido generado correctamente." : "Your PDF has been generated successfully.",
+        description: lang === 'es' ? "PDF generado con solapamiento corregido." : "PDF generated with corrected overlap.",
       });
     } catch (error) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: lang === 'es' ? "Hubo un error al generar el PDF." : "There was an error generating the PDF.",
+        description: lang === 'es' ? "Error en la generación local." : "Local generation error.",
       });
     } finally {
       setIsExporting(false);
@@ -145,12 +164,12 @@ export default function MuralisEditor() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full font-body bg-background text-foreground">
+    <div className="flex flex-col h-screen w-full font-body bg-[#fafafa] text-foreground">
       {/* Top Navbar */}
-      <header className="h-14 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
+      <header className="h-14 border-b border-border bg-white/80 backdrop-blur-md flex items-center justify-between px-6 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
               <Layers className="text-white h-5 w-5" />
             </div>
             <h1 className="text-xl font-headline font-black tracking-tighter text-primary">
@@ -158,12 +177,12 @@ export default function MuralisEditor() {
             </h1>
           </div>
           <Separator orientation="vertical" className="h-6" />
-          <div className="flex gap-1">
+          <div className="flex bg-muted/50 p-1 rounded-lg">
             <Button 
               variant={view === 'editor' ? 'secondary' : 'ghost'} 
               size="sm" 
               onClick={() => setView('editor')}
-              className="gap-2 font-semibold"
+              className="gap-2 font-semibold h-8"
             >
               <Layout className="h-4 w-4" /> {t.editor}
             </Button>
@@ -171,7 +190,7 @@ export default function MuralisEditor() {
               variant={view === 'preview' ? 'secondary' : 'ghost'} 
               size="sm" 
               onClick={() => setView('preview')}
-              className="gap-2 font-semibold"
+              className="gap-2 font-semibold h-8"
             >
               <Eye className="h-4 w-4" /> {t.preview}
             </Button>
@@ -182,20 +201,20 @@ export default function MuralisEditor() {
           <LanguageSelector language={lang} setLanguage={setLang} />
           <Button 
             variant="default" 
-            className="bg-primary hover:bg-primary/90 text-white font-bold gap-2 px-6 shadow-md" 
+            className="bg-primary hover:bg-primary/90 text-white font-bold gap-2 px-6 shadow-xl shadow-primary/20 transition-all hover:scale-105" 
             onClick={handleExport}
             disabled={!image || isExporting}
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            {isExporting ? (lang === 'es' ? "Procesando..." : "Processing...") : t.export}
+            {isExporting ? (lang === 'es' ? "Generando..." : "Generating...") : t.export}
           </Button>
         </div>
       </header>
 
-      {/* Main Creative Suite Layout */}
+      {/* Main Layout */}
       <main className="flex-1 flex overflow-hidden">
         {/* Central Canvas Area */}
-        <section className="flex-1 relative bg-muted/20 overflow-hidden flex items-center justify-center">
+        <section className="flex-1 relative bg-[#f0f0f0] overflow-hidden flex items-center justify-center">
           {!image ? (
             <div className="max-w-md w-full p-6 animate-fade-in">
               <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
@@ -220,13 +239,13 @@ export default function MuralisEditor() {
         </section>
 
         {/* Right Adjustment Panel */}
-        <aside className="w-80 border-l border-border bg-white overflow-y-auto custom-scrollbar">
+        <aside className="w-80 border-l border-border bg-white overflow-y-auto custom-scrollbar shadow-2xl z-40">
           <div className="p-6 space-y-8">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-headline font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <h2 className="text-xs font-headline font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Settings2 className="h-4 w-4 text-primary" /> {t.gridSettings}
               </h2>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setImage(null)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setImage(null)}>
                 <Undo2 className="h-4 w-4" />
               </Button>
             </div>
@@ -242,7 +261,7 @@ export default function MuralisEditor() {
                   value={[rows]} 
                   onValueChange={(v) => setRows(v[0])} 
                   min={1} 
-                  max={20} 
+                  max={15} 
                   step={1} 
                 />
               </div>
@@ -256,7 +275,7 @@ export default function MuralisEditor() {
                   value={[cols]} 
                   onValueChange={(v) => setCols(v[0])} 
                   min={1} 
-                  max={20} 
+                  max={15} 
                   step={1} 
                 />
               </div>
@@ -270,8 +289,8 @@ export default function MuralisEditor() {
                   <Info className="h-3 w-3 text-muted-foreground" />
                 </div>
                 <Select value={paperSize} onValueChange={setPaperSize}>
-                  <SelectTrigger className="bg-white border-border">
-                    <SelectValue placeholder="Seleccionar tamaño" />
+                  <SelectTrigger className="bg-white border-border h-9 text-xs">
+                    <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="A4">A4 (210 x 297 mm)</SelectItem>
@@ -287,20 +306,39 @@ export default function MuralisEditor() {
                   <Label className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1">
                     <Scissors className="h-3 w-3" /> {t.overlap}
                   </Label>
-                  <span className="text-xs font-mono text-accent font-bold">{overlap}cm</span>
+                  <span className="text-xs font-mono text-accent font-bold">{overlap} cm</span>
                 </div>
                 <Slider 
                   value={[overlap]} 
                   onValueChange={(v) => setOverlap(v[0])} 
                   min={0} 
-                  max={10} 
+                  max={5} 
+                  step={0.1} 
+                />
+                <p className="text-[10px] text-muted-foreground italic">
+                  * Área extra para unir los paneles.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-end">
+                  <Label className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1">
+                    <Maximize className="h-3 w-3" /> {t.margins}
+                  </Label>
+                  <span className="text-xs font-mono text-primary font-bold">{margins} cm</span>
+                </div>
+                <Slider 
+                  value={[margins]} 
+                  onValueChange={(v) => setMargins(v[0])} 
+                  min={0} 
+                  max={3} 
                   step={0.5} 
                 />
               </div>
 
-              <div className="pt-4 space-y-4">
+              <div className="pt-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold cursor-pointer text-foreground" htmlFor="guides-switch">
+                  <Label className="text-xs font-bold uppercase text-muted-foreground cursor-pointer" htmlFor="guides-switch">
                     {t.guides}
                   </Label>
                   <Switch 
@@ -312,22 +350,22 @@ export default function MuralisEditor() {
               </div>
             </div>
 
-            {/* Statistics Card */}
+            {/* Panel Stats Card */}
             <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl space-y-3">
-              <h3 className="text-xs font-headline font-bold text-primary uppercase">{t.totalPanels}</h3>
+              <h3 className="text-[10px] font-headline font-bold text-primary uppercase tracking-widest">{t.totalPanels}</h3>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-headline font-black text-primary">{rows * cols}</span>
-                <span className="text-xs text-muted-foreground font-mono">uds</span>
+                <span className="text-5xl font-headline font-black text-primary">{rows * cols}</span>
+                <span className="text-xs text-muted-foreground font-mono">hojas</span>
               </div>
               <p className="text-[10px] leading-relaxed text-muted-foreground">
-                {lang === 'es' ? 'Tamaño de pared estimado:' : 'Estimated wall size:'} <br/>
-                <span className="text-primary font-bold">~{Math.round(cols * (PAPER_DIMENSIONS[paperSize]?.width || 21))} x {Math.round(rows * (PAPER_DIMENSIONS[paperSize]?.height || 29))} mm</span>
+                {lang === 'es' ? 'Cada panel incluye un solapamiento de ' : 'Each panel includes an overlap of '} 
+                <span className="text-primary font-bold">{overlap}cm</span>
               </p>
             </div>
           </div>
 
           <div className="p-6 mt-auto">
-             <Button variant="outline" className="w-full border-primary/20 text-primary hover:bg-primary hover:text-white font-bold uppercase text-xs tracking-widest py-6" onClick={() => setImage(null)}>
+             <Button variant="outline" className="w-full border-primary/20 text-primary hover:bg-primary hover:text-white font-bold uppercase text-xs tracking-widest py-6 rounded-xl transition-all" onClick={() => setImage(null)}>
               {t.reset}
             </Button>
           </div>
@@ -335,14 +373,14 @@ export default function MuralisEditor() {
       </main>
 
       {/* Bottom Status Bar */}
-      <footer className="h-8 border-t border-border bg-white px-4 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-widest z-50 shadow-inner">
+      <footer className="h-8 border-t border-border bg-white px-4 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-widest z-50">
         <div className="flex gap-4">
-          <span className="flex items-center gap-1 font-semibold"><Settings className="h-3 w-3" /> Sistema: Online (Local)</span>
-          <span className="flex items-center gap-1"><Grid3X3 className="h-3 w-3" /> Motor: V2.5 Professional</span>
+          <span className="flex items-center gap-1 font-semibold text-primary"><Settings className="h-3 w-3" /> MURALIS ENGINE V3.0</span>
+          <span className="flex items-center gap-1 opacity-50"><Grid3X3 className="h-3 w-3" /> Modo Local / Privado</span>
         </div>
         <div className="flex gap-4">
-          <span>Resolución: 300 DPI</span>
-          <span className="text-primary font-bold">Alta Precisión: ON</span>
+          <span>{paperSize} @ 300 DPI</span>
+          <span className="text-primary font-bold">PROCESADO LOCAL: OK</span>
         </div>
       </footer>
     </div>
