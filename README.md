@@ -1,27 +1,27 @@
 # ReproHub | Professional Reprography Suite
-Developed by **Tekron Web Studio**
+**Desarrollado por Tekron Web Studio (2026)**
 
-ReproHub is a high-performance digital toolkit designed for copy centers, print shops, and graphic arts professionals. It streamlines complex prepress tasks through a clean, intuitive, and modern interface.
+ReproHub es una suite de herramientas digitales de alto rendimiento diseñada específicamente para la industria de la impresión y artes gráficas. El proyecto estrella de esta suite es **Muralis**, un generador de cuadrículas para murales de gran formato.
 
-## 🛠 Featured Tool: Muralis
-Muralis is a powerful grid generator for large-scale murals.
-- **Precision Gridding:** Split high-resolution images into multiple sheets (A4, Letter, Oficio, etc.).
-- **Technical Overlaps:** Configurable overlaps for seamless physical assembly.
-- **Dynamic Margins:** Independent vertical and horizontal margin controls.
-- **Real-time Preview:** Instant 3D mockup simulation to visualize the mural in a real room.
-- **Professional Export:** High-quality PDF generation with print guides and metadata.
+## 📋 Información del Proyecto
 
-## 🚀 Tech Stack
-- **Framework:** Next.js 15 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **UI Components:** Shadcn UI
-- **PDF Engine:** jsPDF
-- **Icons:** Lucide React
-- **Deployment:** Firebase App Hosting
+- **Título (ES):** ReproHub | Suite Profesional de Reprografía
+- **Título (EN):** ReproHub | Professional Reprography Suite
+- **Descripción (ES):** Toolkit digital para expertos en impresión que automatiza la creación de cuadrículas técnicas para murales, gestionando solapes y márgenes de impresión de forma precisa.
+- **Descripción (EN):** Digital toolkit for printing experts that automates the creation of technical mural grids, precisely managing overlaps and printing margins.
 
-## 🌍 Multilingual Support
-Fully localized in English and Spanish.
+## 🛠️ Tecnologías Utilizadas
+`React`, `Next.js`, `TypeScript`, `Tailwind CSS`, `Shadcn UI`, `jsPDF`, `Lucide React`, `Firebase`.
+
+## 🚀 Características Principales
+- **Muralis Engine:** Divide imágenes de alta resolución en paneles imprimibles (A4, Carta, Oficio, etc.).
+- **Simulación Realista:** Previsualización en tiempo real de cómo quedará el mural en una habitación.
+- **Exportación Técnica:** Generación de PDFs con guías de impresión y metadatos de montaje.
+- **Interfaz Glassmorphism:** Panel de ajustes translúcido optimizado para edición móvil.
+
+## 🔗 Enlaces
+- **GitHub:** [Enlace al repositorio]
+- **Demo en Vivo:** [Enlace a la aplicación]
 
 ---
-*Created by Tekron Web Studio - Professional tools for the real-world printing industry.*
+*Diseñado y desarrollado por Tekron Web Studio - Herramientas para el mundo real.*
