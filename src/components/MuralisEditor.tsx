@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -282,7 +281,7 @@ export default function MuralisEditor() {
         <div className="space-y-4">
           <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.paperSize}</Label>
           <Select value={paperSize} onValueChange={(v) => setPaperSize(v)}>
-            <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 rounded-lg text-xs font-bold bg-white/50"><SelectValue /></SelectTrigger>
             <SelectContent>
               {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
             </SelectContent>
@@ -320,7 +319,7 @@ export default function MuralisEditor() {
       </div>
 
       {physicalInfo && (
-        <div className="p-4 bg-muted/20 rounded-xl border border-border/50 space-y-3">
+        <div className="p-4 bg-muted/20 backdrop-blur-sm rounded-xl border border-border/50 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Ruler className="h-3 w-3 text-muted-foreground" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t.finalMeasures}</span>
@@ -468,9 +467,9 @@ export default function MuralisEditor() {
                   <Settings2 className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/70 backdrop-blur-xl border-l-white/20">
+              <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/40 backdrop-blur-2xl border-l-white/20">
                 <div className="h-full overflow-y-auto pt-10 scrollbar-hide">
-                  <div className="px-6 pb-4 md:hidden flex bg-muted/20 py-4 mb-4 items-center justify-between border-b border-white/20">
+                  <div className="px-6 pb-4 md:hidden flex bg-primary/10 py-4 mb-4 items-center justify-between border-b border-white/20">
                     <span className="text-[10px] font-black uppercase tracking-widest text-primary">Modo de Vista</span>
                     <div className="flex bg-white/50 p-1 rounded-xl shadow-inner border border-white/30">
                       <Button 
