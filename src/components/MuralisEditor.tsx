@@ -38,7 +38,10 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Sheet, 
   SheetContent, 
-  SheetTrigger 
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
 } from "@/components/ui/sheet";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
@@ -415,7 +418,7 @@ export default function MuralisEditor() {
       <main className="flex-1 flex overflow-hidden relative">
         <section className={cn(
           "flex-1 relative bg-[#f8f9fa] flex flex-col items-center",
-          !image ? "overflow-y-auto justify-start py-8 md:justify-center" : "overflow-hidden justify-center"
+          !image ? "overflow-y-auto justify-start py-8" : "overflow-hidden justify-center"
         )}>
           {!image ? (
             <div className="max-w-lg w-full px-6 md:p-8 animate-fade-in text-center flex flex-col gap-6 md:gap-8 my-auto">
@@ -511,6 +514,10 @@ export default function MuralisEditor() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-transparent backdrop-blur-none border-l border-white/50 shadow-2xl">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>{t.gridSettings}</SheetTitle>
+                  <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
+                </SheetHeader>
                 <div className="h-full overflow-y-auto pt-10 scrollbar-hide">
                   <div className="px-6 pb-4 md:hidden flex bg-white/20 py-4 mb-4 items-center justify-between border-b border-white/30">
                     <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-white/90 px-2 py-0.5 rounded shadow-md border border-primary/20">Vista</span>
