@@ -442,7 +442,7 @@ export default function MuralisEditor() {
                   <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-4 md:px-8 py-2 md:py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
                     <div className="flex items-center gap-3 md:gap-6">
                       <div className="flex flex-col">
-                        <span className="text-[6px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{lang === 'es' ? 'DIMENSIONES' : 'DIMENSIONS'}</span>
+                        <span className="text-[6px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t.finalMeasures}</span>
                         <div className="flex items-center gap-1.5 md:gap-2">
                           <Maximize2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-primary" />
                           <span className="text-xs md:text-base font-black text-foreground">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
