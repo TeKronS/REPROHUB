@@ -361,18 +361,19 @@ export default function MuralisEditor() {
 
   return (
     <div className="flex flex-col h-screen w-full font-body bg-white text-foreground">
-      <header className="h-16 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
-        <div className="flex items-center gap-6">
+      <header className="h-14 md:h-16 border-b border-border bg-white flex items-center justify-between px-4 md:px-6 z-50 shadow-sm">
+        <div className="flex items-center gap-2 md:gap-6">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary">
-              <ChevronLeft className="h-4 w-4" /> Inicio
+            <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary px-2">
+              <ChevronLeft className="h-4 w-4" /> 
+              <span className="hidden sm:inline">Inicio</span>
             </Button>
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
-              <Layers className="text-white h-4 w-4" />
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-6 h-6 md:w-8 md:h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm">
+              <Layers className="text-white h-3 w-3 md:h-4 md:w-4" />
             </div>
-            <h1 className="text-xl font-headline font-black tracking-tighter text-primary">
+            <h1 className="text-lg md:text-xl font-headline font-black tracking-tighter text-primary">
               MURALIS<span className="text-accent">.</span>
             </h1>
           </div>
@@ -402,11 +403,11 @@ export default function MuralisEditor() {
             </Button>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <LanguageSelector language={lang} setLanguage={setLang} />
-          <Button className="bg-primary hover:bg-primary/90 text-white font-black gap-2 h-10 px-4 md:px-6 rounded-xl shadow-md transition-all active:scale-95 text-xs" onClick={handleExport} disabled={!image || isExporting}>
+          <Button className="hidden sm:flex bg-primary hover:bg-primary/90 text-white font-black gap-2 h-10 px-6 rounded-xl shadow-md transition-all active:scale-95 text-xs" onClick={handleExport} disabled={!image || isExporting}>
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isExporting ? "..." : t.export}</span>
+            {isExporting ? "..." : t.export}
           </Button>
         </div>
       </header>
@@ -418,33 +419,33 @@ export default function MuralisEditor() {
         )}>
           {!image ? (
             <div className="max-w-lg w-full px-6 md:p-8 animate-fade-in text-center flex flex-col gap-6 md:gap-8 my-auto">
-              <div className="order-2 md:order-1 space-y-2">
+              <div className="order-1">
+                <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
+              </div>
+              <div className="order-2 space-y-2">
                 <h2 className="text-2xl md:text-3xl font-headline font-black tracking-tighter">Preparar nuevo mural</h2>
                 <p className="text-muted-foreground font-medium text-sm md:text-base">Sube una imagen de alta resolución para generar tu cuadrícula.</p>
-              </div>
-              <div className="order-1 md:order-2">
-                <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
               </div>
             </div>
           ) : (
             <>
               {physicalInfo && (
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-4 md:px-8">
-                  <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-4 md:px-8 py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
-                    <div className="flex items-center gap-4 md:gap-6">
+                <div className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-4 md:px-8">
+                  <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-4 md:px-8 py-2 md:py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
+                    <div className="flex items-center gap-3 md:gap-6">
                       <div className="flex flex-col">
-                        <span className="text-[7px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{lang === 'es' ? 'DIMENSIONES IMAGEN' : 'IMAGE DIMENSIONS'}</span>
-                        <div className="flex items-center gap-2">
-                          <Maximize2 className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
-                          <span className="text-sm md:text-base font-black text-foreground">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
+                        <span className="text-[6px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{lang === 'es' ? 'DIMENSIONES' : 'DIMENSIONS'}</span>
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <Maximize2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-primary" />
+                          <span className="text-xs md:text-base font-black text-foreground">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
                         </div>
                       </div>
-                      <Separator orientation="vertical" className="h-8 opacity-50" />
+                      <Separator orientation="vertical" className="h-6 md:h-8 opacity-50" />
                       <div className="flex flex-col">
-                        <span className="text-[7px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Paneles</span>
-                        <div className="flex items-center gap-2">
-                          <Layers className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
-                          <span className="text-sm md:text-base font-black text-foreground">{rows * cols} <span className="hidden sm:inline">{lang === 'es' ? 'HOJAS' : 'SHEETS'}</span></span>
+                        <span className="text-[6px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Paneles</span>
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <Layers className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-accent" />
+                          <span className="text-xs md:text-base font-black text-foreground">{rows * cols} <span className="hidden sm:inline">{lang === 'es' ? 'HOJAS' : 'SHEETS'}</span></span>
                         </div>
                       </div>
                     </div>
@@ -459,23 +460,37 @@ export default function MuralisEditor() {
                 </div>
               )}
               
-              <div className="w-full h-full p-4 md:p-8 flex flex-col pt-24">
-                {view === 'editor' ? (
-                  <MuralCanvas 
-                    imageUrl={image.url} 
-                    rows={rows} 
-                    cols={cols} 
-                    overlap={overlap} 
-                    marginV={marginV} 
-                    marginH={marginH}
-                    paperSize={paperSize} 
-                    showGuides={showGuides} 
-                    imageWidth={image.width} 
-                    imageHeight={image.height} 
-                  />
-                ) : (
-                  <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
-                )}
+              <div className="w-full h-full p-4 md:p-8 flex flex-col pt-20 md:pt-24 overflow-y-auto">
+                <div className="flex-1 min-h-[400px]">
+                  {view === 'editor' ? (
+                    <MuralCanvas 
+                      imageUrl={image.url} 
+                      rows={rows} 
+                      cols={cols} 
+                      overlap={overlap} 
+                      marginV={marginV} 
+                      marginH={marginH}
+                      paperSize={paperSize} 
+                      showGuides={showGuides} 
+                      imageWidth={image.width} 
+                      imageHeight={image.height} 
+                    />
+                  ) : (
+                    <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
+                  )}
+                </div>
+
+                {/* Botón de exportar móvil debajo de la previsualización */}
+                <div className="sm:hidden mt-6 pb-24">
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-black gap-3 h-14 rounded-2xl shadow-xl active:scale-[0.98] transition-all text-sm uppercase tracking-wider" 
+                    onClick={handleExport} 
+                    disabled={isExporting}
+                  >
+                    {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5" />}
+                    {isExporting ? "Exportando..." : t.export}
+                  </Button>
+                </div>
               </div>
             </>
           )}
