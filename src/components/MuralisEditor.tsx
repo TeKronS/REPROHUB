@@ -20,7 +20,8 @@ import {
   Image as ImageIcon,
   Ruler,
   Maximize2,
-  ChevronLeft
+  ChevronLeft,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -34,6 +35,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetTrigger 
+} from "@/components/ui/sheet";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -233,6 +239,118 @@ export default function MuralisEditor() {
     }
   };
 
+  const SettingsContent = () => (
+    <div className="p-6 space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <Settings2 className="h-3 w-3" /> {t.gridSettings}
+        </h2>
+        {image && (
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase gap-2 border-dashed border-primary/30" onClick={() => setImage(null)}>
+            <ImageIcon className="h-3.5 w-3.5" /> {lang === 'es' ? 'Cambiar' : 'Change'}
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10">
+          <div className="flex items-center gap-2">
+            <Link2 className="h-3 w-3 text-primary" />
+            <Label className="text-[10px] font-black uppercase cursor-pointer" htmlFor="lock-aspect">Proporción Bloqueada</Label>
+          </div>
+          <Switch id="lock-aspect" checked={lockAspect} onCheckedChange={setLockAspect} />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.rows}</Label>
+            <span className="text-xs font-black text-primary">{rows}</span>
+          </div>
+          <Slider value={[rows]} onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, v[0]) : setRows(v[0])} min={1} max={15} step={1} />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.columns}</Label>
+            <span className="text-xs font-black text-primary">{cols}</span>
+          </div>
+          <Slider value={[cols]} onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, undefined, v[0]) : setCols(v[0])} min={1} max={15} step={1} />
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.paperSize}</Label>
+          <Select value={paperSize} onValueChange={(v) => setPaperSize(v)}>
+            <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Scissors className="h-3 w-3" /> {t.overlap}</Label>
+            <span className="text-xs font-black text-accent">{overlap} cm</span>
+          </div>
+          <Slider value={[overlap]} onValueChange={(v) => setOverlap(v[0])} min={0} max={10} step={0.1} />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Maximize className="h-3 w-3" /> {t.marginsVertical}</Label>
+            <span className="text-xs font-black text-primary">{marginV} cm</span>
+          </div>
+          <Slider value={[marginV]} onValueChange={(v) => setMarginV(v[0])} min={0} max={5} step={0.5} />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Maximize className="h-3 w-3" /> {t.marginsHorizontal}</Label>
+            <span className="text-xs font-black text-primary">{marginH} cm</span>
+          </div>
+          <Slider value={[marginH]} onValueChange={(v) => setMarginH(v[0])} min={0} max={5} step={0.5} />
+        </div>
+
+        <div className="flex items-center justify-between pt-2">
+          <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer" htmlFor="guides">{t.guides}</Label>
+          <Switch id="guides" checked={showGuides} onCheckedChange={setShowGuides} />
+        </div>
+      </div>
+
+      {physicalInfo && (
+        <div className="p-4 bg-muted/20 rounded-xl border border-border/50 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Ruler className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t.finalMeasures}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-[8px] font-bold text-muted-foreground uppercase block">{lang === 'es' ? 'Imagen' : 'Image'}</span>
+              <span className="text-sm font-black text-primary">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
+            </div>
+            <div>
+              <span className="text-[8px] font-bold text-muted-foreground uppercase block">{t.panelArea}</span>
+              <span className="text-sm font-black text-foreground">{physicalInfo.printableW} x {physicalInfo.printableH} cm</span>
+            </div>
+          </div>
+          <Separator className="opacity-50" />
+          <div className="flex justify-between items-center">
+            <span className="text-[8px] font-bold text-muted-foreground uppercase">{t.blankSpace}</span>
+            <span className={cn("text-xs font-black", Number(physicalInfo.blankW) > 0 || Number(physicalInfo.blankH) > 0 ? "text-accent" : "text-muted-foreground")}>
+              +{physicalInfo.blankW}w / +{physicalInfo.blankH}h cm
+            </span>
+          </div>
+          <div className="pt-1">
+             <span className="text-[8px] font-bold text-muted-foreground uppercase block mb-1">{t.totalArea} (Papel)</span>
+             <span className="text-[11px] font-bold text-muted-foreground">{physicalInfo.totalW} x {physicalInfo.totalH} cm</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   if (!mounted) return null;
 
   return (
@@ -252,8 +370,8 @@ export default function MuralisEditor() {
               MURALIS<span className="text-accent">.</span>
             </h1>
           </div>
-          <Separator orientation="vertical" className="h-8" />
-          <div className="flex bg-muted/50 p-1 rounded-xl">
+          <Separator orientation="vertical" className="h-8 hidden md:block" />
+          <div className="hidden md:flex bg-muted/50 p-1 rounded-xl">
             <Button variant={view === 'editor' ? 'secondary' : 'ghost'} size="sm" onClick={() => setView('editor')} className="gap-2 font-bold h-8 rounded-lg text-xs">
               <Layout className="h-3.5 w-3.5" /> {t.editor}
             </Button>
@@ -264,14 +382,14 @@ export default function MuralisEditor() {
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector language={lang} setLanguage={setLang} />
-          <Button className="bg-primary hover:bg-primary/90 text-white font-black gap-2 h-10 px-6 rounded-xl shadow-md transition-all active:scale-95 text-xs" onClick={handleExport} disabled={!image || isExporting}>
+          <Button className="bg-primary hover:bg-primary/90 text-white font-black gap-2 h-10 px-4 md:px-6 rounded-xl shadow-md transition-all active:scale-95 text-xs" onClick={handleExport} disabled={!image || isExporting}>
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            {isExporting ? "..." : t.export}
+            <span className="hidden sm:inline">{isExporting ? "..." : t.export}</span>
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-hidden relative">
         <section className="flex-1 relative bg-[#f8f9fa] overflow-hidden flex flex-col items-center justify-center">
           {!image ? (
             <div className="max-w-lg w-full p-8 animate-fade-in text-center space-y-8">
@@ -284,27 +402,27 @@ export default function MuralisEditor() {
           ) : (
             <>
               {physicalInfo && (
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-8">
-                  <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-8 py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
-                    <div className="flex items-center gap-6">
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-4 md:px-8">
+                  <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-4 md:px-8 py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
+                    <div className="flex items-center gap-4 md:gap-6">
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{lang === 'es' ? 'DIMENSIONES IMAGEN' : 'IMAGE DIMENSIONS'}</span>
+                        <span className="text-[7px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{lang === 'es' ? 'DIMENSIONES IMAGEN' : 'IMAGE DIMENSIONS'}</span>
                         <div className="flex items-center gap-2">
-                          <Maximize2 className="h-3.5 w-3.5 text-primary" />
-                          <span className="text-base font-black text-foreground">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
+                          <Maximize2 className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
+                          <span className="text-sm md:text-base font-black text-foreground">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
                         </div>
                       </div>
                       <Separator orientation="vertical" className="h-8 opacity-50" />
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Paneles</span>
+                        <span className="text-[7px] md:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Paneles</span>
                         <div className="flex items-center gap-2">
-                          <Layers className="h-3.5 w-3.5 text-accent" />
-                          <span className="text-base font-black text-foreground">{rows * cols} {lang === 'es' ? 'HOJAS' : 'SHEETS'}</span>
+                          <Layers className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
+                          <span className="text-sm md:text-base font-black text-foreground">{rows * cols} <span className="hidden sm:inline">{lang === 'es' ? 'HOJAS' : 'SHEETS'}</span></span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex items-center gap-4">
                       <div className="flex flex-col items-end">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t.paperSize}</span>
                         <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{paperSize}</span>
@@ -336,117 +454,49 @@ export default function MuralisEditor() {
           )}
         </section>
 
-        <aside className="w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
-          <div className="p-6 space-y-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Settings2 className="h-3 w-3" /> {t.gridSettings}
-              </h2>
-              {image && (
-                <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase gap-2 border-dashed border-primary/30" onClick={() => setImage(null)}>
-                  <ImageIcon className="h-3.5 w-3.5" /> {lang === 'es' ? 'Cambiar' : 'Change'}
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              <div className="flex items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10">
-                <div className="flex items-center gap-2">
-                  <Link2 className="h-3 w-3 text-primary" />
-                  <Label className="text-[10px] font-black uppercase cursor-pointer" htmlFor="lock-aspect">Proporción Bloqueada</Label>
-                </div>
-                <Switch id="lock-aspect" checked={lockAspect} onCheckedChange={setLockAspect} />
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.rows}</Label>
-                  <span className="text-xs font-black text-primary">{rows}</span>
-                </div>
-                <Slider value={[rows]} onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, v[0]) : setRows(v[0])} min={1} max={15} step={1} />
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.columns}</Label>
-                  <span className="text-xs font-black text-primary">{cols}</span>
-                </div>
-                <Slider value={[cols]} onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, undefined, v[0]) : setCols(v[0])} min={1} max={15} step={1} />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground">{t.paperSize}</Label>
-                <Select value={paperSize} onValueChange={(v) => setPaperSize(v)}>
-                  <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Scissors className="h-3 w-3" /> {t.overlap}</Label>
-                  <span className="text-xs font-black text-accent">{overlap} cm</span>
-                </div>
-                <Slider value={[overlap]} onValueChange={(v) => setOverlap(v[0])} min={0} max={10} step={0.1} />
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Maximize className="h-3 w-3" /> {t.marginsVertical}</Label>
-                  <span className="text-xs font-black text-primary">{marginV} cm</span>
-                </div>
-                <Slider value={[marginV]} onValueChange={(v) => setMarginV(v[0])} min={0} max={5} step={0.5} />
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Maximize className="h-3 w-3" /> {t.marginsHorizontal}</Label>
-                  <span className="text-xs font-black text-primary">{marginH} cm</span>
-                </div>
-                <Slider value={[marginH]} onValueChange={(v) => setMarginH(v[0])} min={0} max={5} step={0.5} />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer" htmlFor="guides">{t.guides}</Label>
-                <Switch id="guides" checked={showGuides} onCheckedChange={setShowGuides} />
-              </div>
-            </div>
-
-            {physicalInfo && (
-              <div className="p-4 bg-muted/20 rounded-xl border border-border/50 space-y-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Ruler className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t.finalMeasures}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[8px] font-bold text-muted-foreground uppercase block">{lang === 'es' ? 'Imagen' : 'Image'}</span>
-                    <span className="text-sm font-black text-primary">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
-                  </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-muted-foreground uppercase block">{t.panelArea}</span>
-                    <span className="text-sm font-black text-foreground">{physicalInfo.printableW} x {physicalInfo.printableH} cm</span>
-                  </div>
-                </div>
-                <Separator className="opacity-50" />
-                <div className="flex justify-between items-center">
-                  <span className="text-[8px] font-bold text-muted-foreground uppercase">{t.blankSpace}</span>
-                  <span className={cn("text-xs font-black", Number(physicalInfo.blankW) > 0 || Number(physicalInfo.blankH) > 0 ? "text-accent" : "text-muted-foreground")}>
-                    +{physicalInfo.blankW}w / +{physicalInfo.blankH}h cm
-                  </span>
-                </div>
-                <div className="pt-1">
-                   <span className="text-[8px] font-bold text-muted-foreground uppercase block mb-1">{t.totalArea} (Papel)</span>
-                   <span className="text-[11px] font-bold text-muted-foreground">{physicalInfo.totalW} x {physicalInfo.totalH} cm</span>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Panel de ajustes para Escritorio */}
+        <aside className="hidden lg:block w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
+          <SettingsContent />
         </aside>
+
+        {/* Botón flotante y panel translúcido para Móvil/Tablet */}
+        {image && (
+          <div className="lg:hidden absolute bottom-6 right-6 z-50">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-transform active:scale-95 border-4 border-white">
+                  <Settings2 className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/70 backdrop-blur-xl border-l-white/20">
+                <div className="h-full overflow-y-auto pt-10 scrollbar-hide">
+                  <div className="px-6 pb-4 md:hidden flex bg-muted/20 py-4 mb-4 items-center justify-between border-b border-white/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Modo de Vista</span>
+                    <div className="flex bg-white/50 p-1 rounded-xl shadow-inner border border-white/30">
+                      <Button 
+                        variant={view === 'editor' ? 'secondary' : 'ghost'} 
+                        size="sm" 
+                        onClick={() => setView('editor')} 
+                        className="gap-2 font-bold h-7 rounded-lg text-[10px]"
+                      >
+                        {t.editor}
+                      </Button>
+                      <Button 
+                        variant={view === 'preview' ? 'secondary' : 'ghost'} 
+                        size="sm" 
+                        onClick={() => setView('preview')} 
+                        className="gap-2 font-bold h-7 rounded-lg text-[10px]"
+                      >
+                        {t.preview}
+                      </Button>
+                    </div>
+                  </div>
+                  <SettingsContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </main>
     </div>
   );
