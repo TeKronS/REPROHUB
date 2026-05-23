@@ -412,9 +412,12 @@ export default function MuralisEditor() {
       </header>
 
       <main className="flex-1 flex overflow-hidden relative">
-        <section className="flex-1 relative bg-[#f8f9fa] overflow-hidden flex flex-col items-center justify-center">
+        <section className={cn(
+          "flex-1 relative bg-[#f8f9fa] flex flex-col items-center justify-center",
+          !image ? "overflow-y-auto" : "overflow-hidden"
+        )}>
           {!image ? (
-            <div className="max-w-lg w-full p-8 animate-fade-in text-center space-y-8">
+            <div className="max-w-lg w-full p-8 animate-fade-in text-center space-y-8 my-auto">
               <div className="space-y-2">
                 <h2 className="text-3xl font-headline font-black tracking-tighter">Preparar nuevo mural</h2>
                 <p className="text-muted-foreground font-medium">Sube una imagen de alta resolución para generar tu cuadrícula.</p>
@@ -494,22 +497,24 @@ export default function MuralisEditor() {
                 <div className="h-full overflow-y-auto pt-10 scrollbar-hide">
                   <div className="px-6 pb-4 md:hidden flex bg-white/20 py-4 mb-4 items-center justify-between border-b border-white/30">
                     <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-white/90 px-2 py-0.5 rounded shadow-md border border-primary/20">Vista</span>
-                    <div className="flex bg-white/30 p-1 rounded-xl shadow-lg border border-white/40">
+                    <div className="flex bg-white/40 p-1.5 rounded-xl shadow-lg border border-white/30 backdrop-blur-md">
                       <Button 
                         onClick={() => setView('editor')} 
                         className={cn(
-                          "gap-2 font-bold h-8 rounded-lg text-[10px] shadow-sm transition-all",
-                          view === 'editor' ? "bg-primary text-white" : "bg-white/90 text-muted-foreground hover:bg-white"
+                          "gap-2 font-bold h-9 rounded-lg text-xs shadow-sm transition-all flex-1",
+                          view === 'editor' ? "bg-primary text-white border-primary" : "bg-white/60 text-muted-foreground hover:bg-white border-transparent"
                         )}
+                        variant={view === 'editor' ? 'default' : 'ghost'}
                       >
                         {t.editor}
                       </Button>
                       <Button 
                         onClick={() => setView('preview')} 
                         className={cn(
-                          "gap-2 font-bold h-8 rounded-lg text-[10px] shadow-sm transition-all",
-                          view === 'preview' ? "bg-primary text-white" : "bg-white/90 text-muted-foreground hover:bg-white"
+                          "gap-2 font-bold h-9 rounded-lg text-xs shadow-sm transition-all flex-1",
+                          view === 'preview' ? "bg-primary text-white border-primary" : "bg-white/60 text-muted-foreground hover:bg-white border-transparent"
                         )}
+                        variant={view === 'preview' ? 'default' : 'ghost'}
                       >
                         {t.preview}
                       </Button>
