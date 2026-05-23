@@ -49,7 +49,7 @@ export function ImageUploader({ onImageUpload, language, t }: ImageUploaderProps
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "relative flex flex-col items-center justify-center w-full h-full min-h-[400px] border-2 border-dashed rounded-xl transition-all duration-300",
+        "relative flex flex-col items-center justify-center w-full h-full min-h-[300px] md:min-h-[400px] border-2 border-dashed rounded-xl transition-all duration-300",
         isDragging ? "border-accent bg-accent/5" : "border-border hover:border-primary/50",
         "bg-card/50 backdrop-blur-sm"
       )}

@@ -413,16 +413,18 @@ export default function MuralisEditor() {
 
       <main className="flex-1 flex overflow-hidden relative">
         <section className={cn(
-          "flex-1 relative bg-[#f8f9fa] flex flex-col items-center justify-center",
-          !image ? "overflow-y-auto" : "overflow-hidden"
+          "flex-1 relative bg-[#f8f9fa] flex flex-col items-center",
+          !image ? "overflow-y-auto justify-start py-8 md:justify-center" : "overflow-hidden justify-center"
         )}>
           {!image ? (
-            <div className="max-w-lg w-full p-8 animate-fade-in text-center space-y-8 my-auto">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-headline font-black tracking-tighter">Preparar nuevo mural</h2>
-                <p className="text-muted-foreground font-medium">Sube una imagen de alta resolución para generar tu cuadrícula.</p>
+            <div className="max-w-lg w-full px-6 md:p-8 animate-fade-in text-center flex flex-col gap-6 md:gap-8 my-auto">
+              <div className="order-2 md:order-1 space-y-2">
+                <h2 className="text-2xl md:text-3xl font-headline font-black tracking-tighter">Preparar nuevo mural</h2>
+                <p className="text-muted-foreground font-medium text-sm md:text-base">Sube una imagen de alta resolución para generar tu cuadrícula.</p>
               </div>
-              <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
+              <div className="order-1 md:order-2">
+                <ImageUploader onImageUpload={handleImageUpload} language={lang} t={t} />
+              </div>
             </div>
           ) : (
             <>
