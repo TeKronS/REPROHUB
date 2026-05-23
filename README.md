@@ -1,4 +1,5 @@
 # ReproHub | Professional Reprography Suite
+Developed by **Tekron Web Studio**
 
 ReproHub is a high-performance digital toolkit designed for copy centers, print shops, and graphic arts professionals. It streamlines complex prepress tasks through a clean, intuitive, and modern interface.
 
@@ -23,4 +24,4 @@ Muralis is a powerful grid generator for large-scale murals.
 Fully localized in English and Spanish.
 
 ---
-*Created as a professional tool for the real-world printing industry.*
+*Created by Tekron Web Studio - Professional tools for the real-world printing industry.*
