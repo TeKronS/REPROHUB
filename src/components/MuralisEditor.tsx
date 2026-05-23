@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -38,10 +37,13 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: string }> = {
-  'Letter': { width: 215.9, height: 279.4, format: 'letter' },
+  'Carta': { width: 215.9, height: 279.4, format: 'letter' },
   'A4': { width: 210, height: 297, format: 'a4' },
   'A3': { width: 297, height: 420, format: 'a3' },
-  'Legal': { width: 215.9, height: 355.6, format: 'legal' }
+  'Oficio (Legal)': { width: 215.9, height: 355.6, format: 'legal' },
+  'Folio': { width: 215.9, height: 330.2, format: 'folio' },
+  'Oficio': { width: 216, height: 340, format: 'oficio' },
+  'Extra Oficio': { width: 216, height: 380, format: 'extra-oficio' }
 };
 
 export default function MuralisEditor() {
@@ -53,7 +55,7 @@ export default function MuralisEditor() {
   const [overlap, setOverlap] = useState(1.5); 
   const [marginV, setMarginV] = useState(1); 
   const [marginH, setMarginH] = useState(1); 
-  const [paperSize, setPaperSize] = useState('Letter');
+  const [paperSize, setPaperSize] = useState('Carta');
   const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
   const [isExporting, setIsExporting] = useState(false);
@@ -278,7 +280,6 @@ export default function MuralisEditor() {
             </div>
           ) : (
             <>
-              {/* Floating measurements bar above canvas */}
               {physicalInfo && (
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-8">
                   <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-8 py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">

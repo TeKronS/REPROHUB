@@ -18,10 +18,13 @@ interface MuralCanvasProps {
 }
 
 const PAPER_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  'Letter': { width: 215.9, height: 279.4 },
+  'Carta': { width: 215.9, height: 279.4 },
   'A4': { width: 210, height: 297 },
   'A3': { width: 297, height: 420 },
-  'Legal': { width: 215.9, height: 355.6 }
+  'Oficio (Legal)': { width: 215.9, height: 355.6 },
+  'Folio': { width: 215.9, height: 330.2 },
+  'Oficio': { width: 216, height: 340 },
+  'Extra Oficio': { width: 216, height: 380 }
 };
 
 export function MuralCanvas({ 
@@ -42,7 +45,7 @@ export function MuralCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
-  const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS['Letter'];
+  const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS['Carta'];
 
   const dimensions = useMemo(() => {
     const printableW = paper.width - (marginH * 20);
@@ -181,7 +184,6 @@ export function MuralCanvas({
                 )}>
                   {showGuides && (
                     <>
-                      {/* Visualización de márgenes asimétricos */}
                       <div className="absolute inset-0 border-black/5" 
                            style={{ 
                              borderTopWidth: `${marginV * 10}px`,
