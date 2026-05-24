@@ -20,7 +20,8 @@ import {
   Image as ImageIcon,
   Ruler,
   Maximize2,
-  ChevronLeft
+  ChevronLeft,
+  Smartphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -52,7 +53,7 @@ const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: 
   'Carta': { width: 215.9, height: 279.4, format: 'letter' },
   'A4': { width: 210, height: 297, format: 'a4' },
   'A3': { width: 297, height: 420, format: 'a3' },
-  'Oficio (Legal 35.5cm)': { width: 215.9, height: 35.6, format: 'legal' },
+  'Oficio (Legal 35.5cm)': { width: 215.9, height: 355.6, format: 'legal' },
   'Folio (33cm)': { width: 215.9, height: 330.2, format: 'folio' },
   'Oficio (34cm)': { width: 216, height: 340, format: 'oficio' },
   'Extra Oficio (38cm)': { width: 216, height: 380, format: 'extra-oficio' }
@@ -68,6 +69,7 @@ export default function MuralisEditor() {
   const [marginV, setMarginV] = useState(1); 
   const [marginH, setMarginH] = useState(1); 
   const [paperSize, setPaperSize] = useState('Carta');
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
   const [isExporting, setIsExporting] = useState(false);
@@ -81,7 +83,11 @@ export default function MuralisEditor() {
   const t = translations[lang];
 
   const calculateAutoGrid = useCallback((imgW: number, imgH: number, targetRows?: number, targetCols?: number) => {
-    const paper = PAPER_DIMENSIONS[paperSize];
+    const paperBase = PAPER_DIMENSIONS[paperSize];
+    const paper = orientation === 'portrait' 
+      ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
+      : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
+
     const printableW = paper.width - (marginH * 20);
     const printableH = paper.height - (marginV * 20);
     const overlapMm = overlap * 10;
@@ -109,11 +115,15 @@ export default function MuralisEditor() {
       setCols(initialCols);
       setRows(initialRows);
     }
-  }, [paperSize, marginV, marginH, overlap]);
+  }, [paperSize, marginV, marginH, overlap, orientation]);
 
   const physicalInfo = useMemo(() => {
     if (!image) return null;
-    const paper = PAPER_DIMENSIONS[paperSize];
+    const paperBase = PAPER_DIMENSIONS[paperSize];
+    const paper = orientation === 'portrait' 
+      ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
+      : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
+
     const printableW = paper.width - (marginH * 20);
     const printableH = paper.height - (marginV * 20);
     const overlapMm = overlap * 10;
@@ -145,7 +155,7 @@ export default function MuralisEditor() {
       printableW: (printableW / 10).toFixed(1),
       printableH: (printableH / 10).toFixed(1)
     };
-  }, [image, rows, cols, overlap, marginV, marginH, paperSize]);
+  }, [image, rows, cols, overlap, marginV, marginH, paperSize, orientation]);
 
   const handleImageUpload = (file: File, url: string) => {
     const img = new window.Image();
@@ -164,11 +174,15 @@ export default function MuralisEditor() {
       img.src = image.url;
       await new Promise((resolve) => img.onload = resolve);
 
-      const paper = PAPER_DIMENSIONS[paperSize];
+      const paperBase = PAPER_DIMENSIONS[paperSize];
+      const paper = orientation === 'portrait' 
+        ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
+        : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
+
       const pdf = new jsPDF({
-        orientation: paper.width > paper.height ? 'l' : 'p',
+        orientation: orientation === 'portrait' ? 'p' : 'l',
         unit: 'mm',
-        format: paper.format as any
+        format: paperBase.format as any
       });
 
       const printableW = paper.width - (marginH * 20);
@@ -230,7 +244,7 @@ export default function MuralisEditor() {
           }
           pdf.setFontSize(7);
           pdf.setTextColor(180);
-          pdf.text(`REPROHUB | MURALIS | PANEL ${r+1}-${c+1} | ${paperSize}`, marginH * 10, paper.height - (marginV * 5));
+          pdf.text(`REPROHUB | MURALIS | PANEL ${r+1}-${c+1} | ${paperSize} (${orientation === 'portrait' ? 'P' : 'L'})`, marginH * 10, paper.height - (marginV * 5));
         }
       }
       pdf.save(`muralis-grid-${Date.now()}.pdf`);
@@ -282,14 +296,27 @@ export default function MuralisEditor() {
 
         <Separator className="bg-white/40" />
 
-        <div className="space-y-4">
-          <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-2 inline-block">{t.paperSize}</Label>
-          <Select value={paperSize} onValueChange={(v) => setPaperSize(v)}>
-            <SelectTrigger className="h-10 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-2 inline-block">{t.paperSize}</Label>
+            <Select value={paperSize} onValueChange={(v) => setPaperSize(v)}>
+              <SelectTrigger className="h-10 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-2 inline-block">{t.orientation}</Label>
+            <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
+              <SelectTrigger className="h-10 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="portrait" className="text-xs font-bold">{t.portrait}</SelectItem>
+                <SelectItem value="landscape" className="text-xs font-bold">{t.landscape}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -461,7 +488,7 @@ export default function MuralisEditor() {
                     <div className="hidden sm:flex items-center gap-4">
                       <div className="flex flex-col items-end">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t.paperSize}</span>
-                        <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{paperSize}</span>
+                        <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{paperSize} {orientation === 'portrait' ? '(V)' : '(H)'}</span>
                       </div>
                     </div>
                   </div>
@@ -479,6 +506,7 @@ export default function MuralisEditor() {
                       marginV={marginV} 
                       marginH={marginH}
                       paperSize={paperSize} 
+                      orientation={orientation}
                       showGuides={showGuides} 
                       imageWidth={image.width} 
                       imageHeight={image.height} 

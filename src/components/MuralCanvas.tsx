@@ -12,6 +12,7 @@ interface MuralCanvasProps {
   marginV: number;
   marginH: number;
   paperSize: string;
+  orientation: 'portrait' | 'landscape';
   showGuides: boolean;
   imageWidth?: number;
   imageHeight?: number;
@@ -34,7 +35,8 @@ export function MuralCanvas({
   overlap, 
   marginV, 
   marginH,
-  paperSize, 
+  paperSize,
+  orientation,
   showGuides,
   imageWidth = 1,
   imageHeight = 1
@@ -45,7 +47,10 @@ export function MuralCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
-  const paper = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS['Carta'];
+  const paperBase = PAPER_DIMENSIONS[paperSize] || PAPER_DIMENSIONS['Carta'];
+  const paper = orientation === 'portrait' 
+    ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
+    : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
 
   const dimensions = useMemo(() => {
     const printableW = paper.width - (marginH * 20);
@@ -104,7 +109,7 @@ export function MuralCanvas({
 
     const timer = setTimeout(updateZoomToFit, 100);
     return () => clearTimeout(timer);
-  }, [dimensions.totalW, dimensions.totalH, imageUrl, paperSize]);
+  }, [dimensions.totalW, dimensions.totalH, imageUrl, paperSize, orientation]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
