@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
@@ -77,7 +78,6 @@ export default function MuralisEditor() {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [showGuides, setShowGuides] = useState(true);
 
-  // States for target dimensions (cm)
   const [targetWidth, setTargetWidth] = useState<string>('0');
   const [targetHeight, setTargetHeight] = useState<string>('0');
 
@@ -109,7 +109,6 @@ export default function MuralisEditor() {
 
   const t = translations[lang];
 
-  // Helper to calculate required sheets and best orientation
   const calculateOptimizedGrid = (
     w_cm: number, 
     h_cm: number, 
@@ -149,13 +148,18 @@ export default function MuralisEditor() {
     const pResults = calcForOrientation('portrait');
     const lResults = calcForOrientation('landscape');
 
-    // Choose orientation with fewest sheets, default to portrait on tie
     return pResults.total <= lResults.total ? pResults : lResults;
   };
 
   const handleWidthChange = (val: string, isDraft: boolean) => {
     if (!image) return;
-    const num = parseFloat(val);
+    const num = Math.max(0, parseFloat(val));
+    if (isNaN(num)) {
+      if (isDraft) setDraftTargetWidth(val);
+      else setTargetWidth(val);
+      return;
+    }
+
     const aspect = image.width / image.height;
     const newHeight = num / aspect;
 
@@ -165,10 +169,10 @@ export default function MuralisEditor() {
     const setC = isDraft ? setDraftCols : setCols;
     const setO = isDraft ? setDraftOrientation : setOrientation;
 
-    setW(val);
+    setW(num.toString());
     setH(newHeight.toFixed(1));
 
-    if (!isNaN(num) && num > 0) {
+    if (num > 0) {
       const opt = calculateOptimizedGrid(
         num, 
         newHeight, 
@@ -185,7 +189,13 @@ export default function MuralisEditor() {
 
   const handleHeightChange = (val: string, isDraft: boolean) => {
     if (!image) return;
-    const num = parseFloat(val);
+    const num = Math.max(0, parseFloat(val));
+    if (isNaN(num)) {
+      if (isDraft) setDraftTargetHeight(val);
+      else setTargetHeight(val);
+      return;
+    }
+
     const aspect = image.width / image.height;
     const newWidth = num * aspect;
 
@@ -195,10 +205,10 @@ export default function MuralisEditor() {
     const setC = isDraft ? setDraftCols : setCols;
     const setO = isDraft ? setDraftOrientation : setOrientation;
 
-    setH(val);
+    setH(num.toString());
     setW(newWidth.toFixed(1));
 
-    if (!isNaN(num) && num > 0) {
+    if (num > 0) {
       const opt = calculateOptimizedGrid(
         newWidth, 
         num, 
@@ -207,6 +217,7 @@ export default function MuralisEditor() {
         isDraft ? draftMarginV : marginV, 
         isDraft ? draftMarginH : marginH
       );
+      setW(newWidth.toFixed(1));
       setR(opt.rows);
       setC(opt.cols);
       setO(opt.orientation);
@@ -269,7 +280,7 @@ export default function MuralisEditor() {
     img.src = url;
     img.onload = () => {
       setImage({ file, url, width: img.width, height: img.height });
-      const initialW = 100; // 1 meter default width
+      const initialW = 100; 
       const initialH = 100 / (img.width / img.height);
       setTargetWidth(initialW.toString());
       setTargetHeight(initialH.toFixed(1));
@@ -296,6 +307,8 @@ export default function MuralisEditor() {
       const activeMarginH = isMenuOpen ? draftMarginH : marginH;
       const activePaperSize = isMenuOpen ? draftPaperSize : paperSize;
       const activeOrientation = isMenuOpen ? draftOrientation : orientation;
+      const activeTargetW = parseFloat(isMenuOpen ? draftTargetWidth : targetWidth);
+      const activeTargetH = parseFloat(isMenuOpen ? draftTargetHeight : targetHeight);
 
       const paperBase = PAPER_DIMENSIONS[activePaperSize];
       const paper = activeOrientation === 'portrait' 
@@ -317,9 +330,8 @@ export default function MuralisEditor() {
       const totalGridW = (activeCols * effectiveSheetW) + overlapMm;
       const totalGridH = (activeRows * effectiveSheetH) + overlapMm;
 
-      const scale = Math.min(totalGridW / img.width, totalGridH / img.height);
-      const finalW_mm = img.width * scale;
-      const finalH_mm = img.height * scale;
+      const finalW_mm = activeTargetW * 10;
+      const finalH_mm = activeTargetH * 10;
       const offsetX_mm = (totalGridW - finalW_mm) / 2;
       const offsetY_mm = (totalGridH - finalH_mm) / 2;
 
@@ -379,7 +391,7 @@ export default function MuralisEditor() {
     }
   };
 
-  const getMeasures = (r: number, c: number, ov: number, mV: number, mH: number, pS: string, orient: 'portrait' | 'landscape') => {
+  const getMeasures = (r: number, c: number, ov: number, mV: number, mH: number, pS: string, orient: 'portrait' | 'landscape', tW: string, tH: string) => {
     if (!image) return null;
     const paperBase = PAPER_DIMENSIONS[pS];
     const paper = orient === 'portrait' 
@@ -395,30 +407,21 @@ export default function MuralisEditor() {
     const totalGridW = (c * effectiveW) + overlapMm;
     const totalGridH = (r * effectiveH) + overlapMm;
 
-    const imgAspect = image.width / image.height;
-    const gridAspect = totalGridW / totalGridH;
-
-    let finalW_mm, finalH_mm;
-    if (imgAspect > gridAspect) {
-      finalW_mm = totalGridW;
-      finalH_mm = totalGridW / imgAspect;
-    } else {
-      finalH_mm = totalGridH;
-      finalW_mm = totalGridH * imgAspect;
-    }
+    const finalW_mm = parseFloat(tW) * 10;
+    const finalH_mm = parseFloat(tH) * 10;
 
     return {
       imgW: (finalW_mm / 10).toFixed(1),
       imgH: (finalH_mm / 10).toFixed(1),
       printableW: (printableW / 10).toFixed(1),
       printableH: (printableH / 10).toFixed(1),
-      blankW: ((totalGridW - finalW_mm) / 10).toFixed(1),
-      blankH: ((totalGridH - finalH_mm) / 10).toFixed(1),
+      blankW: Math.max(0, (totalGridW - finalW_mm) / 10).toFixed(1),
+      blankH: Math.max(0, (totalGridH - finalH_mm) / 10).toFixed(1),
     };
   };
 
-  const physicalInfo = useMemo(() => getMeasures(rows, cols, overlap, marginV, marginH, paperSize, orientation), [image, rows, cols, overlap, marginV, marginH, paperSize, orientation]);
-  const draftInfo = useMemo(() => getMeasures(draftRows, draftCols, draftOverlap, draftMarginV, draftMarginH, draftPaperSize, draftOrientation), [image, draftRows, draftCols, draftOverlap, draftMarginV, draftMarginH, draftPaperSize, draftOrientation]);
+  const physicalInfo = useMemo(() => getMeasures(rows, cols, overlap, marginV, marginH, paperSize, orientation, targetWidth, targetHeight), [image, rows, cols, overlap, marginV, marginH, paperSize, orientation, targetWidth, targetHeight]);
+  const draftInfo = useMemo(() => getMeasures(draftRows, draftCols, draftOverlap, draftMarginV, draftMarginH, draftPaperSize, draftOrientation, draftTargetWidth, draftTargetHeight), [image, draftRows, draftCols, draftOverlap, draftMarginV, draftMarginH, draftPaperSize, draftOrientation, draftTargetWidth, draftTargetHeight]);
 
   const renderSettings = (
     currentRows: number, 
@@ -452,7 +455,6 @@ export default function MuralisEditor() {
       )}
 
       <div className="space-y-4">
-        {/* Dimension Inputs Section */}
         <div className="bg-white p-4 rounded-xl border border-primary/10 shadow-sm space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Maximize2 className="h-3.5 w-3.5 text-primary" />
@@ -469,6 +471,8 @@ export default function MuralisEditor() {
                 type="number" 
                 value={curWidth} 
                 onChange={(e) => handleWidthChange(e.target.value, !!isMobile)}
+                min="0.1"
+                step="0.1"
                 className="h-9 font-black text-sm text-primary bg-primary/5 border-primary/20"
               />
             </div>
@@ -478,6 +482,8 @@ export default function MuralisEditor() {
                 type="number" 
                 value={curHeight} 
                 onChange={(e) => handleHeightChange(e.target.value, !!isMobile)}
+                min="0.1"
+                step="0.1"
                 className="h-9 font-black text-sm text-primary bg-primary/5 border-primary/20"
               />
             </div>
@@ -798,15 +804,14 @@ export default function MuralisEditor() {
                       paperSize={paperSize} 
                       orientation={orientation}
                       showGuides={showGuides} 
-                      imageWidth={image.width} 
-                      imageHeight={image.height} 
+                      imageWidth={parseFloat(targetWidth)} 
+                      imageHeight={parseFloat(targetHeight)} 
                     />
                   ) : (
                     <MockupPreview imageUrl={image.url} rows={deferredRows} cols={deferredCols} />
                   )}
                 </div>
                 
-                {/* Botón de Exportar rápido para Móvil y Tablet */}
                 <div className="lg:hidden mt-4 pb-4 w-full max-w-xl mx-auto shrink-0">
                   <Button 
                     className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-xl transition-all active:scale-95 text-sm uppercase tracking-widest"
@@ -911,3 +916,4 @@ export default function MuralisEditor() {
     </div>
   );
 }
+

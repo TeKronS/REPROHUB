@@ -53,7 +53,6 @@ export const MuralCanvas = memo(function MuralCanvas({
     ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
     : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
 
-  // Detectamos si la cuadrícula es densa para simplificar el renderizado (Optimización Móvil)
   const isDense = useMemo(() => (rows * cols) > 30, [rows, cols]);
 
   const dimensions = useMemo(() => {
@@ -67,17 +66,9 @@ export const MuralCanvas = memo(function MuralCanvas({
     const totalGridW = (cols * effectiveW) + overlapMm;
     const totalGridH = (rows * effectiveH) + overlapMm;
     
-    const imgAspect = imageWidth / imageHeight;
-    const gridAspect = totalGridW / totalGridH;
-    
-    let drawW, drawH;
-    if (imgAspect > gridAspect) {
-      drawW = totalGridW;
-      drawH = totalGridW / imgAspect;
-    } else {
-      drawH = totalGridH;
-      drawW = totalGridH * imgAspect;
-    }
+    // Las dimensiones de dibujo son exactamente las que vienen del target (en mm)
+    const drawW = imageWidth * 10;
+    const drawH = imageHeight * 10;
 
     return {
       totalW: totalGridW,
@@ -193,7 +184,6 @@ export const MuralCanvas = memo(function MuralCanvas({
                 )}>
                   {showGuides && (
                     <>
-                      {/* Modo Detallado vs Modo Lite */}
                       {!isDense ? (
                         <>
                           <div className="absolute inset-0 border-black/5" 
@@ -220,7 +210,6 @@ export const MuralCanvas = memo(function MuralCanvas({
                           )}
                         </>
                       ) : (
-                        // Modo LITE para rendimiento en móviles
                         <div className="absolute top-1 left-1 bg-white/90 px-1 rounded border border-primary/10 z-20">
                           <span className="text-[8px] font-bold font-mono text-primary/70">{r+1}-{c+1}</span>
                         </div>
@@ -248,3 +237,4 @@ export const MuralCanvas = memo(function MuralCanvas({
     </div>
   );
 });
+
