@@ -173,8 +173,9 @@ export default function MuralisEditor() {
     const newW_mm = newH_mm * aspect;
 
     const printableW = paper.width - (mH * 20);
-    const effectiveW = printableW - overlapMm;
-    const neededCols = Math.ceil((newW_mm - overlapMm) / effectiveW);
+    const overlapMmX = ov * 10;
+    const effectiveW = printableW - overlapMmX;
+    const neededCols = Math.ceil((newW_mm - overlapMmX) / effectiveW);
 
     const setR = isDraft ? setDraftRows : setRows;
     const setC = isDraft ? setDraftCols : setCols;
@@ -209,8 +210,9 @@ export default function MuralisEditor() {
     const newH_mm = newW_mm / aspect;
 
     const printableH = paper.height - (mV * 20);
-    const effectiveH = printableH - overlapMm;
-    const neededRows = Math.ceil((newH_mm - overlapMm) / effectiveH);
+    const overlapMmY = ov * 10;
+    const effectiveH = printableH - overlapMmY;
+    const neededRows = Math.ceil((newH_mm - overlapMmY) / effectiveH);
 
     const setR = isDraft ? setDraftRows : setRows;
     const setC = isDraft ? setDraftCols : setCols;
@@ -301,15 +303,47 @@ export default function MuralisEditor() {
     img.src = url;
     img.onload = () => {
       setImage({ file, url, width: img.width, height: img.height });
-      const initialW = 100; 
-      const initialH = 100 / (img.width / img.height);
-      setTargetWidth(initialW.toString());
-      setTargetHeight(initialH.toFixed(1));
       
-      const opt = calculateOptimizedGrid(initialW, initialH, paperSize, overlap, marginV, marginH);
-      setRows(opt.rows);
-      setCols(opt.cols);
-      setOrientation(opt.orientation);
+      const paperBase = PAPER_DIMENSIONS[paperSize];
+      const overlapMm = overlap * 10;
+      const marginVMm = marginV * 10;
+      const marginHMm = marginH * 10;
+      const aspect = img.width / img.height;
+
+      // Calculamos el tamaño resultante para una cuadrícula de 2x2 en ambas orientaciones
+      const calcSize = (orient: 'portrait' | 'landscape') => {
+        const p = orient === 'portrait' 
+          ? { w: Math.min(paperBase.width, paperBase.height), h: Math.max(paperBase.width, paperBase.height) }
+          : { w: Math.max(paperBase.width, paperBase.height), h: Math.min(paperBase.width, paperBase.height) };
+        
+        const printableW = p.w - (marginHMm * 2);
+        const printableH = p.h - (marginVMm * 2);
+        const effectiveW = printableW - overlapMm;
+        const effectiveH = printableH - overlapMm;
+
+        const maxGridW = (2 * effectiveW) + overlapMm;
+        const maxGridH = (2 * effectiveH) + overlapMm;
+
+        let finalW, finalH;
+        if (maxGridW / maxGridH > aspect) {
+          finalH = maxGridH;
+          finalW = finalH * aspect;
+        } else {
+          finalW = maxGridW;
+          finalH = finalW / aspect;
+        }
+        return { w: finalW, h: finalH, area: finalW * finalH, orient };
+      };
+
+      const port = calcSize('portrait');
+      const land = calcSize('landscape');
+      const best = port.area >= land.area ? port : land;
+
+      setRows(2);
+      setCols(2);
+      setOrientation(best.orient);
+      setTargetWidth((best.w / 10).toFixed(1));
+      setTargetHeight((best.h / 10).toFixed(1));
     };
   };
 
@@ -993,3 +1027,4 @@ export default function MuralisEditor() {
     </div>
   );
 }
+
