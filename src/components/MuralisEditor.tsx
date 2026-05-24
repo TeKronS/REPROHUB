@@ -18,13 +18,11 @@ import {
   Loader2,
   Maximize,
   Link2,
-  Image as ImageIcon,
+  ImageIcon,
   Ruler,
   Maximize2,
   ChevronLeft,
-  Smartphone,
-  RefreshCcw,
-  X
+  RefreshCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -67,26 +65,37 @@ export default function MuralisEditor() {
   const [lang, setLang] = useState<Language>('es');
   const [image, setImage] = useState<{ url: string; file: File; width: number; height: number } | null>(null);
   
-  // Estado inmediato para los sliders (prioridad alta)
+  // Estado real (en vivo)
   const [rows, setRows] = useState(2);
   const [cols, setCols] = useState(2);
   const [overlap, setOverlap] = useState(1.5); 
   const [marginV, setMarginV] = useState(1); 
   const [marginH, setMarginH] = useState(1); 
-  
-  // Valores diferidos para los componentes pesados (prioridad baja)
+  const [paperSize, setPaperSize] = useState('Carta');
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [lockAspect, setLockAspect] = useState(true);
+  const [showGuides, setShowGuides] = useState(true);
+
+  // Estado de borrador para móvil (drafts)
+  const [draftRows, setDraftRows] = useState(2);
+  const [draftCols, setDraftCols] = useState(2);
+  const [draftOverlap, setDraftOverlap] = useState(1.5);
+  const [draftMarginV, setDraftMarginV] = useState(1);
+  const [draftMarginH, setDraftMarginH] = useState(1);
+  const [draftPaperSize, setDraftPaperSize] = useState('Carta');
+  const [draftOrientation, setDraftOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [draftLockAspect, setDraftLockAspect] = useState(true);
+  const [draftShowGuides, setDraftShowGuides] = useState(true);
+
+  // Valores diferidos para renderizado suave
   const deferredRows = useDeferredValue(rows);
   const deferredCols = useDeferredValue(cols);
   const deferredOverlap = useDeferredValue(overlap);
   const deferredMarginV = useDeferredValue(marginV);
   const deferredMarginH = useDeferredValue(marginH);
 
-  const [paperSize, setPaperSize] = useState('Carta');
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-  const [showGuides, setShowGuides] = useState(true);
   const [view, setView] = useState<'editor' | 'preview'>('editor');
   const [isExporting, setIsExporting] = useState(false);
-  const [lockAspect, setLockAspect] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { toast } = useToast();
 
@@ -96,15 +105,27 @@ export default function MuralisEditor() {
 
   const t = translations[lang];
 
-  const calculateAutoGrid = useCallback((imgW: number, imgH: number, targetRows?: number, targetCols?: number) => {
-    const paperBase = PAPER_DIMENSIONS[paperSize];
-    const paper = orientation === 'portrait' 
+  const calculateAutoGrid = useCallback((
+    imgW: number, 
+    imgH: number, 
+    setR: (v: number) => void,
+    setC: (v: number) => void,
+    pSize: string,
+    orient: 'portrait' | 'landscape',
+    mH: number,
+    mV: number,
+    ov: number,
+    targetRows?: number, 
+    targetCols?: number
+  ) => {
+    const paperBase = PAPER_DIMENSIONS[pSize];
+    const paper = orient === 'portrait' 
       ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
       : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
 
-    const printableW = paper.width - (marginH * 20);
-    const printableH = paper.height - (marginV * 20);
-    const overlapMm = overlap * 10;
+    const printableW = paper.width - (mH * 20);
+    const printableH = paper.height - (mV * 20);
+    const overlapMm = ov * 10;
     const imgAspect = imgW / imgH;
     const effectiveSheetW = printableW - overlapMm;
     const effectiveSheetH = printableH - overlapMm;
@@ -113,70 +134,57 @@ export default function MuralisEditor() {
       const totalH_mm = targetRows * effectiveSheetH + overlapMm;
       const totalW_mm = totalH_mm * imgAspect;
       const calculatedCols = Math.max(1, Math.round((totalW_mm - overlapMm) / effectiveSheetW));
-      setRows(targetRows);
-      setCols(calculatedCols);
+      setR(targetRows);
+      setC(calculatedCols);
     } else if (targetCols !== undefined) {
       const totalW_mm = targetCols * effectiveSheetW + overlapMm;
       const totalH_mm = totalW_mm / imgAspect;
       const calculatedRows = Math.max(1, Math.round((totalH_mm - overlapMm) / effectiveSheetH));
-      setCols(targetCols);
-      setRows(calculatedRows);
+      setC(targetCols);
+      setR(calculatedRows);
     } else {
       const initialCols = 3;
       const totalW_mm = initialCols * effectiveSheetW + overlapMm;
       const totalH_mm = totalW_mm / imgAspect;
       const initialRows = Math.max(1, Math.round((totalH_mm - overlapMm) / effectiveSheetH));
-      setCols(initialCols);
-      setRows(initialRows);
+      setC(initialCols);
+      setR(initialRows);
     }
-  }, [paperSize, marginV, marginH, overlap, orientation]);
+  }, []);
 
-  const physicalInfo = useMemo(() => {
-    if (!image) return null;
-    const paperBase = PAPER_DIMENSIONS[paperSize];
-    const paper = orientation === 'portrait' 
-      ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
-      : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
-
-    const printableW = paper.width - (marginH * 20);
-    const printableH = paper.height - (marginV * 20);
-    const overlapMm = overlap * 10;
-    const effectiveW = printableW - overlapMm;
-    const effectiveH = printableH - overlapMm;
-
-    const totalGridW = (cols * effectiveW) + overlapMm;
-    const totalGridH = (rows * effectiveH) + overlapMm;
-
-    const imgAspect = image.width / image.height;
-    const gridAspect = totalGridW / totalGridH;
-
-    let finalW_mm, finalH_mm;
-    if (imgAspect > gridAspect) {
-      finalW_mm = totalGridW;
-      finalH_mm = totalGridW / imgAspect;
+  const handleMenuOpenChange = (open: boolean) => {
+    if (open) {
+      // Sincronizar borradores al abrir
+      setDraftRows(rows);
+      setDraftCols(cols);
+      setDraftOverlap(overlap);
+      setDraftMarginV(marginV);
+      setDraftMarginH(marginH);
+      setDraftPaperSize(paperSize);
+      setDraftOrientation(orientation);
+      setDraftLockAspect(lockAspect);
+      setDraftShowGuides(showGuides);
     } else {
-      finalH_mm = totalGridH;
-      finalW_mm = totalGridH * imgAspect;
+      // Aplicar borradores al cerrar
+      setRows(draftRows);
+      setCols(draftCols);
+      setOverlap(draftOverlap);
+      setMarginV(draftMarginV);
+      setMarginH(draftMarginH);
+      setPaperSize(draftPaperSize);
+      setOrientation(draftOrientation);
+      setLockAspect(draftLockAspect);
+      setShowGuides(draftShowGuides);
     }
-
-    return {
-      totalW: (totalGridW / 10).toFixed(1),
-      totalH: (totalGridH / 10).toFixed(1),
-      imgW: (finalW_mm / 10).toFixed(1),
-      imgH: (finalH_mm / 10).toFixed(1),
-      blankW: ((totalGridW - finalW_mm) / 10).toFixed(1),
-      blankH: ((totalGridH - finalH_mm) / 10).toFixed(1),
-      printableW: (printableW / 10).toFixed(1),
-      printableH: (printableH / 10).toFixed(1)
-    };
-  }, [image, rows, cols, overlap, marginV, marginH, paperSize, orientation]);
+    setIsMenuOpen(open);
+  };
 
   const handleImageUpload = (file: File, url: string) => {
     const img = new window.Image();
     img.src = url;
     img.onload = () => {
       setImage({ file, url, width: img.width, height: img.height });
-      calculateAutoGrid(img.width, img.height);
+      calculateAutoGrid(img.width, img.height, setRows, setCols, paperSize, orientation, marginH, marginV, overlap);
     };
   };
 
@@ -188,6 +196,7 @@ export default function MuralisEditor() {
       img.src = image.url;
       await new Promise((resolve) => img.onload = resolve);
 
+      // Usar los valores actuales para exportar
       const paperBase = PAPER_DIMENSIONS[paperSize];
       const paper = orientation === 'portrait' 
         ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
@@ -270,7 +279,69 @@ export default function MuralisEditor() {
     }
   };
 
-  const renderSettings = (isMobile?: boolean) => (
+  const getMeasures = (r: number, c: number, ov: number, mV: number, mH: number, pS: string, orient: 'portrait' | 'landscape') => {
+    if (!image) return null;
+    const paperBase = PAPER_DIMENSIONS[pS];
+    const paper = orient === 'portrait' 
+      ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
+      : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
+
+    const printableW = paper.width - (mH * 20);
+    const printableH = paper.height - (mV * 20);
+    const overlapMm = ov * 10;
+    const effectiveW = printableW - overlapMm;
+    const effectiveH = printableH - overlapMm;
+
+    const totalGridW = (c * effectiveW) + overlapMm;
+    const totalGridH = (r * effectiveH) + overlapMm;
+
+    const imgAspect = image.width / image.height;
+    const gridAspect = totalGridW / totalGridH;
+
+    let finalW_mm, finalH_mm;
+    if (imgAspect > gridAspect) {
+      finalW_mm = totalGridW;
+      finalH_mm = totalGridW / imgAspect;
+    } else {
+      finalH_mm = totalGridH;
+      finalW_mm = totalGridH * imgAspect;
+    }
+
+    return {
+      imgW: (finalW_mm / 10).toFixed(1),
+      imgH: (finalH_mm / 10).toFixed(1),
+      printableW: (printableW / 10).toFixed(1),
+      printableH: (printableH / 10).toFixed(1),
+      blankW: ((totalGridW - finalW_mm) / 10).toFixed(1),
+      blankH: ((totalGridH - finalH_mm) / 10).toFixed(1),
+    };
+  };
+
+  const physicalInfo = useMemo(() => getMeasures(rows, cols, overlap, marginV, marginH, paperSize, orientation), [image, rows, cols, overlap, marginV, marginH, paperSize, orientation]);
+  const draftInfo = useMemo(() => getMeasures(draftRows, draftCols, draftOverlap, draftMarginV, draftMarginH, draftPaperSize, draftOrientation), [image, draftRows, draftCols, draftOverlap, draftMarginV, draftMarginH, draftPaperSize, draftOrientation]);
+
+  const renderSettings = (
+    currentRows: number, 
+    setCurrentRows: (v: number) => void,
+    currentCols: number,
+    setCurrentCols: (v: number) => void,
+    currentOverlap: number,
+    setCurrentOverlap: (v: number) => void,
+    currentMarginV: number,
+    setCurrentMarginV: (v: number) => void,
+    currentMarginH: number,
+    setCurrentMarginH: (v: number) => void,
+    currentPaperSize: string,
+    setCurrentPaperSize: (v: string) => void,
+    currentOrientation: 'portrait' | 'landscape',
+    setCurrentOrientation: (v: 'portrait' | 'landscape') => void,
+    currentLockAspect: boolean,
+    setCurrentLockAspect: (v: boolean) => void,
+    currentShowGuides: boolean,
+    setCurrentShowGuides: (v: boolean) => void,
+    info: any,
+    isMobile?: boolean
+  ) => (
     <div className={cn("space-y-4", isMobile ? "p-4 pt-1" : "p-4")}>
       {!isMobile && (
         <div className="flex items-center justify-between">
@@ -284,25 +355,25 @@ export default function MuralisEditor() {
         <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-primary/10 shadow-sm">
           <div className="flex items-center gap-2">
             <Link2 className="h-3 w-3 text-primary" />
-            <Label className="text-[10px] font-black uppercase cursor-pointer" htmlFor="lock-aspect">Proporción Bloqueada</Label>
+            <Label className="text-[10px] font-black uppercase cursor-pointer" htmlFor={isMobile ? "draft-lock-aspect" : "lock-aspect"}>Proporción Bloqueada</Label>
           </div>
-          <Switch id="lock-aspect" checked={lockAspect} onCheckedChange={setLockAspect} />
+          <Switch id={isMobile ? "draft-lock-aspect" : "lock-aspect"} checked={currentLockAspect} onCheckedChange={setCurrentLockAspect} />
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.rows}</Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{rows}</span>
+            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentRows}</span>
           </div>
-          <Slider value={[rows]} onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, v[0]) : setRows(v[0])} min={1} max={15} step={1} />
+          <Slider value={[currentRows]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, v[0]) : setCurrentRows(v[0])} min={1} max={15} step={1} />
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.columns}</Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{cols}</span>
+            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentCols}</span>
           </div>
-          <Slider value={[cols]} onValueChange={(v) => lockAspect && image ? calculateAutoGrid(image.width, image.height, undefined, v[0]) : setCols(v[0])} min={1} max={15} step={1} />
+          <Slider value={[currentCols]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, v[0]) : setCurrentCols(v[0])} min={1} max={15} step={1} />
         </div>
 
         <Separator className="bg-white/40" />
@@ -310,7 +381,7 @@ export default function MuralisEditor() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.paperSize}</Label>
-            <Select value={paperSize} onValueChange={(v) => setPaperSize(v)}>
+            <Select value={currentPaperSize} onValueChange={(v) => setCurrentPaperSize(v)}>
               <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectContent>
                 {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
@@ -320,7 +391,7 @@ export default function MuralisEditor() {
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.orientation}</Label>
-            <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
+            <Select value={currentOrientation} onValueChange={(v: any) => setCurrentOrientation(v)}>
               <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectContent>
                 <SelectItem value="portrait" className="text-xs font-bold">{t.portrait}</SelectItem>
@@ -335,9 +406,9 @@ export default function MuralisEditor() {
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Scissors className="h-3 w-3" /> {t.overlap}
             </Label>
-            <span className="text-xs font-black text-accent bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{overlap} cm</span>
+            <span className="text-xs font-black text-accent bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentOverlap} cm</span>
           </div>
-          <Slider value={[overlap]} onValueChange={(v) => setOverlap(v[0])} min={0} max={10} step={0.1} />
+          <Slider value={[currentOverlap]} onValueChange={(v) => setCurrentOverlap(v[0])} min={0} max={10} step={0.1} />
         </div>
 
         <div className="space-y-2">
@@ -345,9 +416,9 @@ export default function MuralisEditor() {
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Maximize className="h-3 w-3" /> {t.marginsVertical}
             </Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{marginV} cm</span>
+            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginV} cm</span>
           </div>
-          <Slider value={[marginV]} onValueChange={(v) => setMarginV(v[0])} min={0} max={5} step={0.5} />
+          <Slider value={[currentMarginV]} onValueChange={(v) => setCurrentMarginV(v[0])} min={0} max={5} step={0.5} />
         </div>
 
         <div className="space-y-2">
@@ -355,18 +426,18 @@ export default function MuralisEditor() {
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Maximize className="h-3 w-3" /> {t.marginsHorizontal}
             </Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{marginH} cm</span>
+            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginH} cm</span>
           </div>
-          <Slider value={[marginH]} onValueChange={(v) => setMarginH(v[0])} min={0} max={5} step={0.5} />
+          <Slider value={[currentMarginH]} onValueChange={(v) => setCurrentMarginH(v[0])} min={0} max={5} step={0.5} />
         </div>
 
         <div className="flex items-center justify-between pt-0.5">
-          <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10" htmlFor="guides">{t.guides}</Label>
-          <Switch id="guides" checked={showGuides} onCheckedChange={setShowGuides} className="bg-white/50" />
+          <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10" htmlFor={isMobile ? "draft-guides" : "guides"}>{t.guides}</Label>
+          <Switch id={isMobile ? "draft-guides" : "guides"} checked={currentShowGuides} onCheckedChange={setCurrentShowGuides} className="bg-white/50" />
         </div>
       </div>
 
-      {physicalInfo && (
+      {info && (
         <div className="p-3 bg-white/90 rounded-xl border border-white/40 shadow-xl space-y-2">
           <div className="flex items-center gap-2 mb-0.5">
             <Ruler className="h-3 w-3 text-muted-foreground" />
@@ -375,18 +446,18 @@ export default function MuralisEditor() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <span className="text-[8px] font-bold text-muted-foreground uppercase block">{lang === 'es' ? 'Imagen' : 'Image'}</span>
-              <span className="text-xs font-black text-primary">{physicalInfo.imgW} x {physicalInfo.imgH} cm</span>
+              <span className="text-xs font-black text-primary">{info.imgW} x {info.imgH} cm</span>
             </div>
             <div>
               <span className="text-[8px] font-bold text-muted-foreground uppercase block">{t.panelArea}</span>
-              <span className="text-xs font-black text-foreground">{physicalInfo.printableW} x {physicalInfo.printableH} cm</span>
+              <span className="text-xs font-black text-foreground">{info.printableW} x {info.printableH} cm</span>
             </div>
           </div>
           <Separator className="opacity-20" />
           <div className="flex justify-between items-center">
             <span className="text-[8px] font-bold text-muted-foreground uppercase">{t.blankSpace}</span>
-            <span className={cn("text-[10px] font-black", Number(physicalInfo.blankW) > 0 || Number(physicalInfo.blankH) > 0 ? "text-accent" : "text-muted-foreground")}>
-              +{physicalInfo.blankW}w / +{physicalInfo.blankH}h cm
+            <span className={cn("text-[10px] font-black", Number(info.blankW) > 0 || Number(info.blankH) > 0 ? "text-accent" : "text-muted-foreground")}>
+              +{info.blankW}w / +{info.blankH}h cm
             </span>
           </div>
         </div>
@@ -531,88 +602,96 @@ export default function MuralisEditor() {
                     <MockupPreview imageUrl={image.url} rows={deferredRows} cols={deferredCols} />
                   )}
                 </div>
-
-                <div className="lg:hidden mt-6 pb-24">
-                  <Button 
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-black gap-3 h-14 rounded-2xl shadow-xl active:scale-[0.98] transition-all text-sm uppercase tracking-wider" 
-                    onClick={handleExport} 
-                    disabled={isExporting}
-                  >
-                    {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5" />}
-                    {isExporting ? "Exportando..." : t.export}
-                  </Button>
-                </div>
               </div>
             </>
           )}
         </section>
 
         <aside className="hidden lg:block w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
-          {renderSettings()}
+          {renderSettings(
+            rows, setRows, 
+            cols, setCols, 
+            overlap, setOverlap, 
+            marginV, setMarginV, 
+            marginH, setMarginH,
+            paperSize, setPaperSize,
+            orientation, setOrientation,
+            lockAspect, setLockAspect,
+            showGuides, setShowGuides,
+            physicalInfo
+          )}
         </aside>
       </main>
 
       {image && (
-        <>
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen} modal={false}>
-            <SheetTrigger asChild>
-              <div className="lg:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
+        <Sheet open={isMenuOpen} onOpenChange={handleMenuOpenChange} modal={false}>
+          <SheetTrigger asChild>
+            <div className="lg:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
+              <Button 
+                size="icon" 
+                className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
+              >
+                <Settings2 className="h-6 w-6" />
+              </Button>
+            </div>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col border-l border-border/20">
+            <SheetHeader className="sr-only">
+              <SheetTitle>{t.gridSettings}</SheetTitle>
+              <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
+            </SheetHeader>
+
+            <div className="p-3 bg-primary/5 flex flex-col gap-3">
+              <Button 
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest"
+                onClick={handleExport}
+                disabled={!image || isExporting}
+              >
+                {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                {isExporting ? "..." : t.export}
+              </Button>
+
+              <div className="flex bg-muted/40 p-1 rounded-xl shadow-inner w-full border border-border/20">
                 <Button 
-                  size="icon" 
-                  className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
+                  onClick={() => setView('editor')} 
+                  className={cn(
+                    "gap-2 font-bold h-8 rounded-lg text-[10px] flex-1 transition-all",
+                    view === 'editor' ? "bg-white text-primary shadow-sm border border-primary/10" : "bg-transparent text-muted-foreground hover:bg-white/50"
+                  )}
+                  variant={view === 'editor' ? 'default' : 'ghost'}
                 >
-                  <Settings2 className="h-6 w-6" />
+                  {t.editor}
+                </Button>
+                <Button 
+                  onClick={() => setView('preview')} 
+                  className={cn(
+                    "gap-2 font-bold h-8 rounded-lg text-[10px] flex-1 transition-all",
+                    view === 'preview' ? "bg-white text-primary shadow-sm border border-primary/10" : "bg-transparent text-muted-foreground hover:bg-white/50"
+                  )}
+                  variant={view === 'preview' ? 'default' : 'ghost'}
+                >
+                  {t.preview}
                 </Button>
               </div>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col border-l border-border/20">
-              <SheetHeader className="sr-only">
-                <SheetTitle>{t.gridSettings}</SheetTitle>
-                <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
-              </SheetHeader>
+            </div>
 
-              <div className="p-2 bg-primary/5">
-                <Button 
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest"
-                  onClick={handleExport}
-                  disabled={!image || isExporting}
-                >
-                  {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                  {isExporting ? "..." : t.export}
-                </Button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto scrollbar-hide">
-                <div className="px-4 pt-1 pb-0">
-                  <div className="flex bg-muted/40 p-1 rounded-xl shadow-inner w-full border border-border/20">
-                    <Button 
-                      onClick={() => setView('editor')} 
-                      className={cn(
-                        "gap-2 font-bold h-8 rounded-lg text-[10px] flex-1 transition-all",
-                        view === 'editor' ? "bg-white text-primary shadow-sm border border-primary/10" : "bg-transparent text-muted-foreground hover:bg-white/50"
-                      )}
-                      variant={view === 'editor' ? 'default' : 'ghost'}
-                    >
-                      {t.editor}
-                    </Button>
-                    <Button 
-                      onClick={() => setView('preview')} 
-                      className={cn(
-                        "gap-2 font-bold h-8 rounded-lg text-[10px] flex-1 transition-all",
-                        view === 'preview' ? "bg-white text-primary shadow-sm border border-primary/10" : "bg-transparent text-muted-foreground hover:bg-white/50"
-                      )}
-                      variant={view === 'preview' ? 'default' : 'ghost'}
-                    >
-                      {t.preview}
-                    </Button>
-                  </div>
-                </div>
-
-                {renderSettings(true)}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </>
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+              {renderSettings(
+                draftRows, setDraftRows, 
+                draftCols, setDraftCols, 
+                draftOverlap, setDraftOverlap, 
+                draftMarginV, setDraftMarginV, 
+                draftMarginH, setDraftMarginH,
+                draftPaperSize, setDraftPaperSize,
+                draftOrientation, setDraftOrientation,
+                draftLockAspect, setDraftLockAspect,
+                draftShowGuides, setDraftShowGuides,
+                draftInfo,
+                true
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );
