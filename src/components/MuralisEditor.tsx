@@ -196,26 +196,34 @@ export default function MuralisEditor() {
       img.src = image.url;
       await new Promise((resolve) => img.onload = resolve);
 
-      // Usar los valores actuales para exportar
-      const paperBase = PAPER_DIMENSIONS[paperSize];
-      const paper = orientation === 'portrait' 
+      // Usar borradores si el menú móvil está abierto para exportar con los cambios visuales del usuario
+      const activeRows = isMenuOpen ? draftRows : rows;
+      const activeCols = isMenuOpen ? draftCols : cols;
+      const activeOverlap = isMenuOpen ? draftOverlap : overlap;
+      const activeMarginV = isMenuOpen ? draftMarginV : marginV;
+      const activeMarginH = isMenuOpen ? draftMarginH : marginH;
+      const activePaperSize = isMenuOpen ? draftPaperSize : paperSize;
+      const activeOrientation = isMenuOpen ? draftOrientation : orientation;
+
+      const paperBase = PAPER_DIMENSIONS[activePaperSize];
+      const paper = activeOrientation === 'portrait' 
         ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
         : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
 
       const pdf = new jsPDF({
-        orientation: orientation === 'portrait' ? 'p' : 'l',
+        orientation: activeOrientation === 'portrait' ? 'p' : 'l',
         unit: 'mm',
         format: paperBase.format as any
       });
 
-      const printableW = paper.width - (marginH * 20);
-      const printableH = paper.height - (marginV * 20);
-      const overlapMm = overlap * 10;
+      const printableW = paper.width - (activeMarginH * 20);
+      const printableH = paper.height - (activeMarginV * 20);
+      const overlapMm = activeOverlap * 10;
       const effectiveSheetW = printableW - overlapMm;
       const effectiveSheetH = printableH - overlapMm;
 
-      const totalGridW = (cols * effectiveSheetW) + overlapMm;
-      const totalGridH = (rows * effectiveSheetH) + overlapMm;
+      const totalGridW = (activeCols * effectiveSheetW) + overlapMm;
+      const totalGridH = (activeRows * effectiveSheetH) + overlapMm;
 
       const scale = Math.min(totalGridW / img.width, totalGridH / img.height);
       const finalW_mm = img.width * scale;
@@ -228,8 +236,8 @@ export default function MuralisEditor() {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Canvas fail");
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < activeRows; r++) {
+        for (let c = 0; c < activeCols; c++) {
           if (r > 0 || c > 0) pdf.addPage();
           
           const sheetLeft_mm = c * effectiveSheetW;
@@ -252,22 +260,22 @@ export default function MuralisEditor() {
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (marginH * 10) + drawInSheetX_mm, (marginV * 10) + drawInSheetY_mm, visibleW_mm, visibleH_mm);
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (activeMarginH * 10) + drawInSheetX_mm, (activeMarginV * 10) + drawInSheetY_mm, visibleW_mm, visibleH_mm);
           }
 
           pdf.setDrawColor(220);
           pdf.setLineDashPattern([2, 2], 0);
-          if (c < cols - 1) {
-            const gx = (marginH * 10) + (printableW - overlapMm);
-            pdf.line(gx, marginV * 10, gx, marginV * 10 + printableH);
+          if (c < activeCols - 1) {
+            const gx = (activeMarginH * 10) + (printableW - overlapMm);
+            pdf.line(gx, activeMarginV * 10, gx, activeMarginV * 10 + printableH);
           }
-          if (r < rows - 1) {
-            const gy = (marginV * 10) + (printableH - overlapMm);
-            pdf.line(marginH * 10, gy, marginH * 10 + printableW, gy);
+          if (r < activeRows - 1) {
+            const gy = (activeMarginV * 10) + (printableH - overlapMm);
+            pdf.line(activeMarginH * 10, gy, activeMarginH * 10 + printableW, gy);
           }
           pdf.setFontSize(7);
           pdf.setTextColor(180);
-          pdf.text(`REPROHUB | MURALIS | PANEL ${r+1}-${c+1} | ${paperSize} (${orientation === 'portrait' ? 'P' : 'L'})`, marginH * 10, paper.height - (marginV * 5));
+          pdf.text(`REPROHUB | MURALIS | PANEL ${r+1}-${c+1} | ${activePaperSize} (${activeOrientation === 'portrait' ? 'P' : 'L'})`, activeMarginH * 10, paper.height - (activeMarginV * 5));
         }
       }
       pdf.save(`muralis-grid-${Date.now()}.pdf`);
@@ -696,3 +704,4 @@ export default function MuralisEditor() {
     </div>
   );
 }
+
