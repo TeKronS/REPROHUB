@@ -22,7 +22,9 @@ import {
   Ruler,
   Maximize2,
   ChevronLeft,
-  RefreshCcw
+  RefreshCcw,
+  Plus,
+  Minus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -373,7 +375,23 @@ export default function MuralisEditor() {
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.rows}</Label>
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentRows}</span>
           </div>
-          <Slider value={[currentRows]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, v[0]) : setCurrentRows(v[0])} min={1} max={15} step={1} />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.max(1, currentRows - 1);
+              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
+              else setCurrentRows(newVal);
+            }}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            <Slider value={[currentRows]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, v[0]) : setCurrentRows(v[0])} min={1} max={15} step={1} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.min(15, currentRows + 1);
+              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
+              else setCurrentRows(newVal);
+            }}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -381,7 +399,23 @@ export default function MuralisEditor() {
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.columns}</Label>
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentCols}</span>
           </div>
-          <Slider value={[currentCols]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, v[0]) : setCurrentCols(v[0])} min={1} max={15} step={1} />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.max(1, currentCols - 1);
+              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
+              else setCurrentCols(newVal);
+            }}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            <Slider value={[currentCols]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, v[0]) : setCurrentCols(v[0])} min={1} max={15} step={1} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.min(15, currentCols + 1);
+              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
+              else setCurrentCols(newVal);
+            }}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         <Separator className="bg-white/40" />
@@ -416,7 +450,15 @@ export default function MuralisEditor() {
             </Label>
             <span className="text-xs font-black text-accent bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentOverlap} cm</span>
           </div>
-          <Slider value={[currentOverlap]} onValueChange={(v) => setCurrentOverlap(v[0])} min={0} max={10} step={0.1} />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => setCurrentOverlap(Math.max(0, parseFloat((currentOverlap - 0.1).toFixed(1))))}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            <Slider value={[currentOverlap]} onValueChange={(v) => setCurrentOverlap(v[0])} min={0} max={10} step={0.1} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => setCurrentOverlap(Math.min(10, parseFloat((currentOverlap + 0.1).toFixed(1))))}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -426,7 +468,15 @@ export default function MuralisEditor() {
             </Label>
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginV} cm</span>
           </div>
-          <Slider value={[currentMarginV]} onValueChange={(v) => setCurrentMarginV(v[0])} min={0} max={5} step={0.5} />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginV(Math.max(0, currentMarginV - 0.5))}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            <Slider value={[currentMarginV]} onValueChange={(v) => setCurrentMarginV(v[0])} min={0} max={5} step={0.5} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginV(Math.min(5, currentMarginV + 0.5))}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -436,7 +486,15 @@ export default function MuralisEditor() {
             </Label>
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginH} cm</span>
           </div>
-          <Slider value={[currentMarginH]} onValueChange={(v) => setCurrentMarginH(v[0])} min={0} max={5} step={0.5} />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginH(Math.max(0, currentMarginH - 0.5))}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            <Slider value={[currentMarginH]} onValueChange={(v) => setCurrentMarginH(v[0])} min={0} max={5} step={0.5} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginH(Math.min(5, currentMarginH + 0.5))}>
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center justify-between pt-0.5">
@@ -704,4 +762,3 @@ export default function MuralisEditor() {
     </div>
   );
 }
-
