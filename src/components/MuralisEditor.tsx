@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import Image from "next/image";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
@@ -65,11 +66,21 @@ export default function MuralisEditor() {
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Language>('es');
   const [image, setImage] = useState<{ url: string; file: File; width: number; height: number } | null>(null);
+  
+  // Estado inmediato para los sliders (prioridad alta)
   const [rows, setRows] = useState(2);
   const [cols, setCols] = useState(2);
   const [overlap, setOverlap] = useState(1.5); 
   const [marginV, setMarginV] = useState(1); 
   const [marginH, setMarginH] = useState(1); 
+  
+  // Valores diferidos para los componentes pesados (prioridad baja)
+  const deferredRows = useDeferredValue(rows);
+  const deferredCols = useDeferredValue(cols);
+  const deferredOverlap = useDeferredValue(overlap);
+  const deferredMarginV = useDeferredValue(marginV);
+  const deferredMarginH = useDeferredValue(marginH);
+
   const [paperSize, setPaperSize] = useState('Carta');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [showGuides, setShowGuides] = useState(true);
@@ -505,11 +516,11 @@ export default function MuralisEditor() {
                   {view === 'editor' ? (
                     <MuralCanvas 
                       imageUrl={image.url} 
-                      rows={rows} 
-                      cols={cols} 
-                      overlap={overlap} 
-                      marginV={marginV} 
-                      marginH={marginH}
+                      rows={deferredRows} 
+                      cols={deferredCols} 
+                      overlap={deferredOverlap} 
+                      marginV={deferredMarginV} 
+                      marginH={deferredMarginH}
                       paperSize={paperSize} 
                       orientation={orientation}
                       showGuides={showGuides} 
@@ -517,7 +528,7 @@ export default function MuralisEditor() {
                       imageHeight={image.height} 
                     />
                   ) : (
-                    <MockupPreview imageUrl={image.url} rows={rows} cols={cols} />
+                    <MockupPreview imageUrl={image.url} rows={deferredRows} cols={deferredCols} />
                   )}
                 </div>
 
@@ -550,7 +561,7 @@ export default function MuralisEditor() {
                   size="icon" 
                   className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
                 >
-                  {isMenuOpen ? <X className="h-6 w-6" /> : <Settings2 className="h-6 w-6" />}
+                  <Settings2 className="h-6 w-6" />
                 </Button>
               </div>
             </SheetTrigger>
@@ -560,7 +571,6 @@ export default function MuralisEditor() {
                 <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
               </SheetHeader>
 
-              {/* Botón de Exportar PDF de Ancho Completo */}
               <div className="p-2 bg-primary/5">
                 <Button 
                   className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest"
@@ -573,7 +583,6 @@ export default function MuralisEditor() {
               </div>
 
               <div className="flex-1 overflow-y-auto scrollbar-hide">
-                {/* Selector de modo en móvil */}
                 <div className="px-4 pt-1 pb-0">
                   <div className="flex bg-muted/40 p-1 rounded-xl shadow-inner w-full border border-border/20">
                     <Button 

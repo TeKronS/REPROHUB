@@ -1,5 +1,7 @@
+
 "use client";
 
+import { memo } from "react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +11,7 @@ interface MockupPreviewProps {
   cols: number;
 }
 
-export function MockupPreview({ imageUrl, rows, cols }: MockupPreviewProps) {
+export const MockupPreview = memo(function MockupPreview({ imageUrl, rows, cols }: MockupPreviewProps) {
   const room = PlaceHolderImages.find(img => img.id === 'modern-living-room');
 
   return (
@@ -65,4 +67,4 @@ export function MockupPreview({ imageUrl, rows, cols }: MockupPreviewProps) {
       </div>
     </div>
   );
-}
+});

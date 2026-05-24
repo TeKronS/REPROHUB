@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, memo } from "react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
@@ -28,7 +29,7 @@ const PAPER_DIMENSIONS: Record<string, { width: number; height: number }> = {
   'Extra Oficio (38cm)': { width: 216, height: 380 }
 };
 
-export function MuralCanvas({ 
+export const MuralCanvas = memo(function MuralCanvas({ 
   imageUrl, 
   rows, 
   cols, 
@@ -152,7 +153,7 @@ export function MuralCanvas({
       onMouseLeave={() => setIsDragging(false)}
     >
       <div 
-        className="relative origin-center pointer-events-auto"
+        className="relative origin-center pointer-events-auto will-change-transform"
         style={{ 
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
           transition: isDragging ? 'none' : 'transform 0.1s ease-out',
@@ -233,4 +234,4 @@ export function MuralCanvas({
       </div>
     </div>
   );
-}
+});
