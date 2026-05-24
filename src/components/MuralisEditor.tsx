@@ -259,7 +259,7 @@ export default function MuralisEditor() {
     }
   };
 
-  const SettingsView = () => (
+  const renderSettings = () => (
     <div className="p-6 space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
@@ -539,7 +539,7 @@ export default function MuralisEditor() {
         </section>
 
         <aside className="hidden lg:block w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
-          <SettingsView />
+          {renderSettings()}
         </aside>
       </main>
 
@@ -577,7 +577,7 @@ export default function MuralisEditor() {
                     </Button>
                   </div>
                 </div>
-                <SettingsView />
+                {renderSettings()}
               </div>
             </SheetContent>
           </Sheet>
@@ -586,7 +586,11 @@ export default function MuralisEditor() {
             <Button 
               size="icon" 
               className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Settings2 className="h-6 w-6" />}
             </Button>
