@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -556,33 +557,33 @@ export default function MuralisEditor() {
                 </Button>
               </div>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/10 backdrop-blur-none border-l border-white/50 shadow-2xl overflow-y-auto">
-              <div className="absolute top-4 right-4 z-[60]">
-                <Button 
-                  size="sm"
-                  className="bg-primary hover:bg-primary/90 text-white font-black gap-2 h-9 px-4 rounded-xl shadow-md transition-all active:scale-95 text-[10px]" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleExport();
-                  }} 
-                  disabled={!image || isExporting}
-                >
-                  {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
-                  {isExporting ? "..." : t.export}
-                </Button>
-              </div>
+            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white shadow-2xl overflow-hidden flex flex-col">
               <SheetHeader className="sr-only">
                 <SheetTitle>{t.gridSettings}</SheetTitle>
                 <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
               </SheetHeader>
-              <div className="pt-10 scrollbar-hide">
-                <div className="px-6 pb-4 md:hidden flex bg-white/20 py-4 mb-4 items-center justify-center border-b border-white/30">
-                  <div className="flex bg-white/40 p-1.5 rounded-xl shadow-lg border border-white/30 backdrop-blur-md w-full">
+
+              {/* Botón de Exportar PDF de Ancho Completo */}
+              <div className="p-6 bg-primary/5 border-b border-border/50">
+                <Button 
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-xl transition-all active:scale-95 text-sm uppercase tracking-widest"
+                  onClick={handleExport}
+                  disabled={!image || isExporting}
+                >
+                  {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5" />}
+                  {isExporting ? "..." : t.export}
+                </Button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
+                {/* Selector de modo (Editor/Previsualización) en móvil */}
+                <div className="px-6 pt-6 pb-2 md:hidden">
+                  <div className="flex bg-muted/50 p-1.5 rounded-2xl shadow-inner w-full border border-border/30">
                     <Button 
                       onClick={() => setView('editor')} 
                       className={cn(
-                        "gap-2 font-bold h-9 rounded-lg text-xs shadow-sm transition-all flex-1",
-                        view === 'editor' ? "bg-primary text-white border-primary" : "bg-white/60 text-muted-foreground hover:bg-white border-transparent"
+                        "gap-2 font-bold h-11 rounded-xl text-xs flex-1 transition-all",
+                        view === 'editor' ? "bg-white text-primary shadow-md border-transparent" : "bg-transparent text-muted-foreground hover:bg-white/50"
                       )}
                       variant={view === 'editor' ? 'default' : 'ghost'}
                     >
@@ -591,8 +592,8 @@ export default function MuralisEditor() {
                     <Button 
                       onClick={() => setView('preview')} 
                       className={cn(
-                        "gap-2 font-bold h-9 rounded-lg text-xs shadow-sm transition-all flex-1",
-                        view === 'preview' ? "bg-primary text-white border-primary" : "bg-white/60 text-muted-foreground hover:bg-white border-transparent"
+                        "gap-2 font-bold h-11 rounded-xl text-xs flex-1 transition-all",
+                        view === 'preview' ? "bg-white text-primary shadow-md border-transparent" : "bg-transparent text-muted-foreground hover:bg-white/50"
                       )}
                       variant={view === 'preview' ? 'default' : 'ghost'}
                     >
@@ -600,6 +601,7 @@ export default function MuralisEditor() {
                     </Button>
                   </div>
                 </div>
+
                 {renderSettings()}
               </div>
             </SheetContent>
