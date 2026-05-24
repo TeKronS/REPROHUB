@@ -41,7 +41,6 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Sheet, 
   SheetContent, 
-  SheetTrigger,
   SheetHeader,
   SheetTitle,
   SheetDescription
@@ -56,8 +55,8 @@ const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: 
   'Carta': { width: 215.9, height: 279.4, format: 'letter' },
   'A4': { width: 210, height: 297, format: 'a4' },
   'A3': { width: 297, height: 420, format: 'a3' },
-  'Oficio (Legal 35.5cm)': { width: 215.9, height: 355.6, format: 'legal' },
-  'Folio (33cm)': { width: 215.9, height: 330.2, format: 'folio' },
+  'Oficio (Legal 35.5cm)': { width: 215.9, height: 35.56 * 10, format: 'legal' },
+  'Folio (33cm)': { width: 215.9, height: 33.02 * 10, format: 'folio' },
   'Oficio (34cm)': { width: 216, height: 340, format: 'oficio' },
   'Extra Oficio (38cm)': { width: 216, height: 380, format: 'extra-oficio' }
 };
@@ -260,7 +259,7 @@ export default function MuralisEditor() {
     }
   };
 
-  const settingsContent = useMemo(() => (
+  const SettingsView = () => (
     <div className="p-6 space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
@@ -384,7 +383,7 @@ export default function MuralisEditor() {
         </div>
       )}
     </div>
-  ), [lang, rows, cols, overlap, marginV, marginH, paperSize, orientation, showGuides, lockAspect, image, physicalInfo, t]);
+  );
 
   if (!mounted) return null;
 
@@ -540,19 +539,19 @@ export default function MuralisEditor() {
         </section>
 
         <aside className="hidden lg:block w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
-          {settingsContent}
+          <SettingsView />
         </aside>
       </main>
 
       {image && (
         <>
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/10 backdrop-blur-none border-l border-white/50 shadow-2xl">
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen} modal={false}>
+            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/10 backdrop-blur-none border-l border-white/50 shadow-2xl overflow-y-auto">
               <SheetHeader className="sr-only">
                 <SheetTitle>{t.gridSettings}</SheetTitle>
                 <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
               </SheetHeader>
-              <div className="h-full overflow-y-auto pt-10 scrollbar-hide">
+              <div className="pt-10 scrollbar-hide">
                 <div className="px-6 pb-4 md:hidden flex bg-white/20 py-4 mb-4 items-center justify-between border-b border-white/30">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-white/90 px-2 py-0.5 rounded shadow-md border border-primary/20">Vista</span>
                   <div className="flex bg-white/40 p-1.5 rounded-xl shadow-lg border border-white/30 backdrop-blur-md">
@@ -578,12 +577,12 @@ export default function MuralisEditor() {
                     </Button>
                   </div>
                 </div>
-                {settingsContent}
+                <SettingsView />
               </div>
             </SheetContent>
           </Sheet>
           
-          <div className="lg:hidden fixed bottom-6 right-6 z-[70]">
+          <div className="lg:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
             <Button 
               size="icon" 
               className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
