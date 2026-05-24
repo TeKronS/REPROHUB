@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
@@ -581,8 +580,8 @@ export default function MuralisEditor() {
 
       <main className="flex-1 flex overflow-hidden relative">
         <section className={cn(
-          "flex-1 relative bg-[#f8f9fa] flex flex-col items-center overflow-y-auto",
-          !image ? "justify-start py-8" : "justify-center"
+          "flex-1 relative bg-[#f8f9fa] flex flex-col items-center overflow-y-auto lg:overflow-hidden",
+          !image ? "justify-start py-8" : "justify-start"
         )}>
           {!image ? (
             <div className="max-w-lg w-full px-6 lg:p-8 animate-fade-in text-center flex flex-col gap-6 lg:gap-8 my-auto">
@@ -636,8 +635,8 @@ export default function MuralisEditor() {
                 </div>
               )}
               
-              <div className="w-full h-full p-4 lg:p-8 flex flex-col pt-20 lg:pt-24">
-                <div className="flex-1 min-h-[280px] lg:min-h-[400px]">
+              <div className="w-full h-[calc(100svh-3.5rem)] p-4 lg:p-8 flex flex-col pt-16 lg:pt-24 overflow-hidden">
+                <div className="flex-1 min-h-0">
                   {view === 'editor' ? (
                     <MuralCanvas 
                       imageUrl={image.url} 
@@ -658,9 +657,9 @@ export default function MuralisEditor() {
                 </div>
                 
                 {/* Botón de Exportar rápido para Móvil y Tablet */}
-                <div className="lg:hidden mt-6 pb-12 w-full max-w-xl mx-auto">
+                <div className="lg:hidden mt-4 pb-4 w-full max-w-xl mx-auto shrink-0">
                   <Button 
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-xl transition-all active:scale-95 text-sm uppercase tracking-widest"
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-xl transition-all active:scale-95 text-sm uppercase tracking-widest"
                     onClick={handleExport}
                     disabled={!image || isExporting}
                   >
