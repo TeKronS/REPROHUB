@@ -260,7 +260,7 @@ export default function MuralisEditor() {
     }
   };
 
-  const renderSettings = () => (
+  const settingsContent = useMemo(() => (
     <div className="p-6 space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
@@ -384,7 +384,7 @@ export default function MuralisEditor() {
         </div>
       )}
     </div>
-  );
+  ), [lang, rows, cols, overlap, marginV, marginH, paperSize, orientation, showGuides, lockAspect, image, physicalInfo, t]);
 
   if (!mounted) return null;
 
@@ -540,20 +540,13 @@ export default function MuralisEditor() {
         </section>
 
         <aside className="hidden lg:block w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
-          {renderSettings()}
+          {settingsContent}
         </aside>
       </main>
 
       {image && (
-        <div className="lg:hidden fixed bottom-6 right-6 z-[60]">
+        <>
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <Button 
-              size="icon" 
-              className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Settings2 className="h-6 w-6" />}
-            </Button>
             <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/10 backdrop-blur-none border-l border-white/50 shadow-2xl">
               <SheetHeader className="sr-only">
                 <SheetTitle>{t.gridSettings}</SheetTitle>
@@ -585,11 +578,21 @@ export default function MuralisEditor() {
                     </Button>
                   </div>
                 </div>
-                {renderSettings()}
+                {settingsContent}
               </div>
             </SheetContent>
           </Sheet>
-        </div>
+          
+          <div className="lg:hidden fixed bottom-6 right-6 z-[70]">
+            <Button 
+              size="icon" 
+              className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Settings2 className="h-6 w-6" />}
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );
