@@ -77,7 +77,6 @@ export default function MuralisEditor() {
   const [marginH, setMarginH] = useState(1); 
   const [paperSize, setPaperSize] = useState('Carta');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-  const [lockAspect, setLockAspect] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
 
   // Estado de borrador para móvil (drafts)
@@ -88,7 +87,6 @@ export default function MuralisEditor() {
   const [draftMarginH, setDraftMarginH] = useState(1);
   const [draftPaperSize, setDraftPaperSize] = useState('Carta');
   const [draftOrientation, setDraftOrientation] = useState<'portrait' | 'landscape'>('portrait');
-  const [draftLockAspect, setDraftLockAspect] = useState(true);
   const [draftShowGuides, setDraftShowGuides] = useState(true);
 
   // Valores diferidos para renderizado suave
@@ -165,7 +163,6 @@ export default function MuralisEditor() {
       setDraftMarginH(marginH);
       setDraftPaperSize(paperSize);
       setDraftOrientation(orientation);
-      setDraftLockAspect(lockAspect);
       setDraftShowGuides(showGuides);
     } else {
       setRows(draftRows);
@@ -175,7 +172,6 @@ export default function MuralisEditor() {
       setMarginH(draftMarginH);
       setPaperSize(draftPaperSize);
       setOrientation(draftOrientation);
-      setLockAspect(draftLockAspect);
       setShowGuides(draftShowGuides);
     }
     setIsMenuOpen(open);
@@ -344,8 +340,6 @@ export default function MuralisEditor() {
     setCurrentPaperSize: (v: string) => void,
     currentOrientation: 'portrait' | 'landscape',
     setCurrentOrientation: (v: 'portrait' | 'landscape') => void,
-    currentLockAspect: boolean,
-    setCurrentLockAspect: (v: boolean) => void,
     currentShowGuides: boolean,
     setCurrentShowGuides: (v: boolean) => void,
     info: any,
@@ -363,10 +357,12 @@ export default function MuralisEditor() {
       <div className="space-y-4">
         <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-primary/10 shadow-sm">
           <div className="flex items-center gap-2">
-            <Link2 className="h-3 w-3 text-primary" />
-            <Label className="text-[10px] font-black uppercase cursor-pointer" htmlFor={isMobile ? "draft-lock-aspect" : "lock-aspect"}>Proporción Bloqueada</Label>
+            <Maximize2 className="h-3.5 w-3.5 text-primary" />
+            <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{t.finalMeasures}</Label>
           </div>
-          <Switch id={isMobile ? "draft-lock-aspect" : "lock-aspect"} checked={currentLockAspect} onCheckedChange={setCurrentLockAspect} />
+          <span className="text-xs font-black text-foreground">
+            {info ? `${info.imgW} x ${info.imgH} cm` : '--'}
+          </span>
         </div>
 
         <div className="space-y-2">
@@ -377,16 +373,14 @@ export default function MuralisEditor() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
               const newVal = Math.max(1, currentRows - 1);
-              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
-              else setCurrentRows(newVal);
+              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
             }}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentRows]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, v[0]) : setCurrentRows(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
+            <Slider value={[currentRows]} onValueChange={(v) => image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, v[0]) : setCurrentRows(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
               const newVal = Math.min(MAX_GRID_DIM, currentRows + 1);
-              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
-              else setCurrentRows(newVal);
+              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
             }}>
               <Plus className="h-3 w-3" />
             </Button>
@@ -401,16 +395,14 @@ export default function MuralisEditor() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
               const newVal = Math.max(1, currentCols - 1);
-              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
-              else setCurrentCols(newVal);
+              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
             }}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentCols]} onValueChange={(v) => currentLockAspect && image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, v[0]) : setCurrentCols(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
+            <Slider value={[currentCols]} onValueChange={(v) => image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, v[0]) : setCurrentCols(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
               const newVal = Math.min(MAX_GRID_DIM, currentCols + 1);
-              if (currentLockAspect && image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
-              else setCurrentCols(newVal);
+              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
             }}>
               <Plus className="h-3 w-3" />
             </Button>
@@ -681,7 +673,6 @@ export default function MuralisEditor() {
             marginH, setMarginH,
             paperSize, setPaperSize,
             orientation, setOrientation,
-            lockAspect, setLockAspect,
             showGuides, setShowGuides,
             physicalInfo
           )}
@@ -749,7 +740,6 @@ export default function MuralisEditor() {
                 draftMarginH, setDraftMarginH,
                 draftPaperSize, setDraftPaperSize,
                 draftOrientation, setDraftOrientation,
-                draftLockAspect, setDraftLockAspect,
                 draftShowGuides, setDraftShowGuides,
                 draftInfo,
                 true
