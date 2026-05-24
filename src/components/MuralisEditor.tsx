@@ -7,12 +7,10 @@ import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUploader } from "./ImageUploader";
 import { MuralCanvas } from "./MuralCanvas";
-import { MockupPreview } from "./MockupPreview";
 import { 
   Settings2, 
   Layout, 
   FileDown, 
-  Eye, 
   Scissors,
   Layers,
   Loader2,
@@ -98,7 +96,6 @@ export default function MuralisEditor() {
   const deferredMarginV = useDeferredValue(marginV);
   const deferredMarginH = useDeferredValue(marginH);
 
-  const [view, setView] = useState<'editor' | 'preview'>('editor');
   const [isExporting, setIsExporting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -310,7 +307,6 @@ export default function MuralisEditor() {
       const marginHMm = marginH * 10;
       const aspect = img.width / img.height;
 
-      // Calculamos el tamaño resultante para una cuadrícula de 2x2 en ambas orientaciones
       const calcSize = (orient: 'portrait' | 'landscape') => {
         const p = orient === 'portrait' 
           ? { w: Math.min(paperBase.width, paperBase.height), h: Math.max(paperBase.width, paperBase.height) }
@@ -529,7 +525,6 @@ export default function MuralisEditor() {
       )}
 
       <div className="space-y-4">
-        {/* PHYSICAL DIMENSIONS INPUTS */}
         <div className="bg-white p-4 rounded-xl border border-primary/10 shadow-sm space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Maximize2 className="h-3.5 w-3.5 text-primary" />
@@ -568,7 +563,6 @@ export default function MuralisEditor() {
           </p>
         </div>
 
-        {/* ROWS CONTROL */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.rows}</Label>
@@ -592,7 +586,6 @@ export default function MuralisEditor() {
           </div>
         </div>
 
-        {/* COLUMNS CONTROL */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.columns}</Label>
@@ -661,7 +654,6 @@ export default function MuralisEditor() {
           </div>
         </div>
 
-        {/* OVERLAP CONTROL */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
@@ -690,7 +682,6 @@ export default function MuralisEditor() {
           </div>
         </div>
 
-        {/* MARGIN VERTICAL CONTROL */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
@@ -719,7 +710,6 @@ export default function MuralisEditor() {
           </div>
         </div>
 
-        {/* MARGIN HORIZONTAL CONTROL */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
@@ -808,30 +798,6 @@ export default function MuralisEditor() {
             </h1>
           </div>
           <Separator orientation="vertical" className="h-8 hidden lg:block" />
-          <div className="hidden lg:flex bg-muted/50 p-1 rounded-xl">
-            <Button 
-              variant={view === 'editor' ? 'default' : 'ghost'} 
-              size="sm" 
-              onClick={() => setView('editor')} 
-              className={cn(
-                "gap-2 font-bold h-8 rounded-lg text-xs transition-all",
-                view === 'editor' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:bg-white"
-              )}
-            >
-              <Layout className="h-3.5 w-3.5" /> {t.editor}
-            </Button>
-            <Button 
-              variant={view === 'preview' ? 'default' : 'ghost'} 
-              size="sm" 
-              onClick={() => setView('preview')} 
-              className={cn(
-                "gap-2 font-bold h-8 rounded-lg text-xs transition-all",
-                view === 'preview' ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:bg-white"
-              )}
-            >
-              <Eye className="h-3.5 w-3.5" /> {t.preview}
-            </Button>
-          </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
           <LanguageSelector language={lang} setLanguage={setLang} />
@@ -901,23 +867,19 @@ export default function MuralisEditor() {
               
               <div className="w-full h-[calc(100svh-3.5rem)] p-4 lg:p-8 flex flex-col pt-16 lg:pt-24 overflow-hidden">
                 <div className="flex-1 min-h-0">
-                  {view === 'editor' ? (
-                    <MuralCanvas 
-                      imageUrl={image.url} 
-                      rows={deferredRows} 
-                      cols={deferredCols} 
-                      overlap={deferredOverlap} 
-                      marginV={deferredMarginV} 
-                      marginH={deferredMarginH}
-                      paperSize={paperSize} 
-                      orientation={orientation}
-                      showGuides={showGuides} 
-                      imageWidth={parseFloat(targetWidth)} 
-                      imageHeight={parseFloat(targetHeight)} 
-                    />
-                  ) : (
-                    <MockupPreview imageUrl={image.url} rows={deferredRows} cols={deferredCols} />
-                  )}
+                  <MuralCanvas 
+                    imageUrl={image.url} 
+                    rows={deferredRows} 
+                    cols={deferredCols} 
+                    overlap={deferredOverlap} 
+                    marginV={deferredMarginV} 
+                    marginH={deferredMarginH}
+                    paperSize={paperSize} 
+                    orientation={orientation}
+                    showGuides={showGuides} 
+                    imageWidth={parseFloat(targetWidth)} 
+                    imageHeight={parseFloat(targetHeight)} 
+                  />
                 </div>
                 
                 <div className="lg:hidden mt-4 pb-4 w-full max-w-xl mx-auto shrink-0">
@@ -980,29 +942,6 @@ export default function MuralisEditor() {
                   {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                   {isExporting ? "..." : t.export}
                 </Button>
-
-                <div className="flex bg-muted/40 p-1 rounded-xl shadow-inner w-full border border-border/20">
-                  <Button 
-                    onClick={() => setView('editor')} 
-                    className={cn(
-                      "gap-2 font-bold h-8 rounded-lg text-[10px] flex-1 transition-all",
-                      view === 'editor' ? "bg-white text-primary shadow-sm border border-primary/10" : "bg-transparent text-muted-foreground hover:bg-white/50"
-                    )}
-                    variant={view === 'editor' ? 'default' : 'ghost'}
-                  >
-                    {t.editor}
-                  </Button>
-                  <Button 
-                    onClick={() => setView('preview')} 
-                    className={cn(
-                      "gap-2 font-bold h-8 rounded-lg text-[10px] flex-1 transition-all",
-                      view === 'preview' ? "bg-white text-primary shadow-sm border border-primary/10" : "bg-transparent text-muted-foreground hover:bg-white/50"
-                    )}
-                    variant={view === 'preview' ? 'default' : 'ghost'}
-                  >
-                    {t.preview}
-                  </Button>
-                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
@@ -1027,4 +966,3 @@ export default function MuralisEditor() {
     </div>
   );
 }
-
