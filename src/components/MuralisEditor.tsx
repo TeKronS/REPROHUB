@@ -563,9 +563,8 @@ export default function MuralisEditor() {
                 <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
               </SheetHeader>
               <div className="pt-10 scrollbar-hide">
-                <div className="px-6 pb-4 md:hidden flex bg-white/20 py-4 mb-4 items-center justify-between border-b border-white/30">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-white/90 px-2 py-0.5 rounded shadow-md border border-primary/20">Vista</span>
-                  <div className="flex bg-white/40 p-1.5 rounded-xl shadow-lg border border-white/30 backdrop-blur-md">
+                <div className="px-6 pb-4 md:hidden flex bg-white/20 py-4 mb-4 items-center justify-center border-b border-white/30">
+                  <div className="flex bg-white/40 p-1.5 rounded-xl shadow-lg border border-white/30 backdrop-blur-md w-full">
                     <Button 
                       onClick={() => setView('editor')} 
                       className={cn(
@@ -597,4 +596,3 @@ export default function MuralisEditor() {
     </div>
   );
 }
-
