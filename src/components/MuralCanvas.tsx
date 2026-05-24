@@ -53,6 +53,9 @@ export const MuralCanvas = memo(function MuralCanvas({
     ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
     : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
 
+  // Detectamos si la cuadrícula es densa para simplificar el renderizado (Optimización Móvil)
+  const isDense = useMemo(() => (rows * cols) > 30, [rows, cols]);
+
   const dimensions = useMemo(() => {
     const printableW = paper.width - (marginH * 20);
     const printableH = paper.height - (marginV * 20);
@@ -93,7 +96,7 @@ export const MuralCanvas = memo(function MuralCanvas({
       const container = containerRef.current;
       if (!container) return;
 
-      const padding = 80; 
+      const padding = 60; 
       const availableW = container.clientWidth - padding;
       const availableH = container.clientHeight - padding;
       
@@ -104,7 +107,7 @@ export const MuralCanvas = memo(function MuralCanvas({
       const scaleH = availableH / contentH;
       const fitScale = Math.min(scaleW, scaleH);
       
-      setZoom(Math.min(fitScale * 0.95, 3.0));
+      setZoom(Math.min(fitScale * 0.9, 3.0));
       setOffset({ x: 0, y: 0 });
     };
 
@@ -155,8 +158,8 @@ export const MuralCanvas = memo(function MuralCanvas({
       <div 
         className="relative origin-center pointer-events-auto will-change-transform"
         style={{ 
-          transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-          transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+          transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})`,
+          transition: isDragging ? 'none' : 'transform 0.15s ease-out',
         }}
       >
         <div 
@@ -186,31 +189,41 @@ export const MuralCanvas = memo(function MuralCanvas({
               return (
                 <div key={i} className={cn(
                   "relative", 
-                  showGuides ? "border-[2px] border-primary/40" : "border-0"
+                  showGuides ? "border-[1.5px] border-primary/30" : "border-0"
                 )}>
                   {showGuides && (
                     <>
-                      <div className="absolute inset-0 border-black/5" 
-                           style={{ 
-                             borderTopWidth: `${marginV * 10}px`,
-                             borderBottomWidth: `${marginV * 10}px`,
-                             borderLeftWidth: `${marginH * 10}px`,
-                             borderRightWidth: `${marginH * 10}px`
-                           }} />
-                           
-                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2 py-1 rounded-md border border-primary/20 shadow-sm z-20">
-                        <span className="text-[11px] font-black font-mono text-primary leading-none tracking-tighter">{r+1}-{c+1}</span>
-                      </div>
-                      
-                      {c < cols - 1 && (
-                        <div className="absolute right-0 top-0 bottom-0 bg-accent/10 border-r-2 border-dashed border-accent/30" 
-                             style={{ width: `${overlap * 10}px` }}>
-                          <div className="absolute top-2 right-2 text-[8px] font-black text-accent uppercase tracking-wider bg-white/80 px-1 rounded shadow-sm">Solape</div>
+                      {/* Modo Detallado vs Modo Lite */}
+                      {!isDense ? (
+                        <>
+                          <div className="absolute inset-0 border-black/5" 
+                               style={{ 
+                                 borderTopWidth: `${marginV * 10}px`,
+                                 borderBottomWidth: `${marginV * 10}px`,
+                                 borderLeftWidth: `${marginH * 10}px`,
+                                 borderRightWidth: `${marginH * 10}px`
+                               }} />
+                               
+                          <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-md px-1.5 py-0.5 rounded border border-primary/20 shadow-sm z-20">
+                            <span className="text-[10px] font-black font-mono text-primary leading-none tracking-tighter">{r+1}-{c+1}</span>
+                          </div>
+                          
+                          {c < cols - 1 && (
+                            <div className="absolute right-0 top-0 bottom-0 bg-accent/5 border-r border-dashed border-accent/20" 
+                                 style={{ width: `${overlap * 10}px` }}>
+                              <div className="absolute top-1 right-1 text-[7px] font-black text-accent uppercase tracking-wider bg-white/80 px-1 rounded">Solape</div>
+                            </div>
+                          )}
+                          {r < rows - 1 && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-accent/5 border-b border-dashed border-accent/20" 
+                                 style={{ height: `${overlap * 10}px` }} />
+                          )}
+                        </>
+                      ) : (
+                        // Modo LITE para rendimiento en móviles
+                        <div className="absolute top-1 left-1 bg-white/90 px-1 rounded border border-primary/10 z-20">
+                          <span className="text-[8px] font-bold font-mono text-primary/70">{r+1}-{c+1}</span>
                         </div>
-                      )}
-                      {r < rows - 1 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-accent/10 border-b-2 border-dashed border-accent/30" 
-                             style={{ height: `${overlap * 10}px` }} />
                       )}
                     </>
                   )}
@@ -221,15 +234,15 @@ export const MuralCanvas = memo(function MuralCanvas({
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-6 flex items-center gap-4 bg-white/95 backdrop-blur-md px-5 py-3 rounded-2xl border border-border shadow-xl animate-fade-in z-50">
+      <div className="absolute bottom-6 left-6 flex items-center gap-4 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-border shadow-lg animate-fade-in z-50">
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">Control de Vista</span>
-          <span className="text-[10px] font-bold text-foreground">Scroll: Zoom • Click + Arrastrar: Mover</span>
+          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Cámara</span>
+          <span className="text-[9px] font-bold text-foreground">{isDense ? 'Modo Lite' : 'Modo Técnico'}</span>
         </div>
-        <Separator orientation="vertical" className="h-8" />
+        <Separator orientation="vertical" className="h-6" />
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">Zoom Actual</span>
-          <span className="text-[10px] font-bold text-primary">{Math.round(zoom * 100)}%</span>
+          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Zoom</span>
+          <span className="text-[9px] font-bold text-primary">{Math.round(zoom * 100)}%</span>
         </div>
       </div>
     </div>
