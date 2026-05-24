@@ -656,6 +656,18 @@ export default function MuralisEditor() {
                     <MockupPreview imageUrl={image.url} rows={deferredRows} cols={deferredCols} />
                   )}
                 </div>
+                
+                {/* Botón de Exportar rápido para Móvil y Tablet */}
+                <div className="lg:hidden mt-6 pb-12 w-full max-w-xl mx-auto">
+                  <Button 
+                    className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-xl transition-all active:scale-95 text-sm uppercase tracking-widest"
+                    onClick={handleExport}
+                    disabled={!image || isExporting}
+                  >
+                    {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5" />}
+                    {isExporting ? "Generando PDF..." : t.export}
+                  </Button>
+                </div>
               </div>
             </>
           )}
