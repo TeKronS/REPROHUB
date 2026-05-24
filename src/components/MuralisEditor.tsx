@@ -260,8 +260,8 @@ export default function MuralisEditor() {
     }
   };
 
-  const renderSettings = () => (
-    <div className="p-4 space-y-4">
+  const renderSettings = (isMobile?: boolean) => (
+    <div className={cn("space-y-4", isMobile ? "p-4 pt-2" : "p-4")}>
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
           <Settings2 className="h-3 w-3" /> {t.gridSettings}
@@ -560,7 +560,7 @@ export default function MuralisEditor() {
               </SheetHeader>
 
               {/* Botón de Exportar PDF de Ancho Completo */}
-              <div className="p-3 bg-primary/5 border-b border-border/20">
+              <div className="p-2 bg-primary/5">
                 <Button 
                   className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest"
                   onClick={handleExport}
@@ -573,7 +573,7 @@ export default function MuralisEditor() {
 
               <div className="flex-1 overflow-y-auto scrollbar-hide">
                 {/* Selector de modo en móvil */}
-                <div className="px-4 pt-3 pb-1">
+                <div className="px-4 pt-2 pb-0">
                   <div className="flex bg-muted/40 p-1 rounded-xl shadow-inner w-full border border-border/20">
                     <Button 
                       onClick={() => setView('editor')} 
@@ -598,7 +598,7 @@ export default function MuralisEditor() {
                   </div>
                 </div>
 
-                {renderSettings()}
+                {renderSettings(true)}
               </div>
             </SheetContent>
           </Sheet>
