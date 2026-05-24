@@ -95,13 +95,13 @@ export default function MuralisEditor() {
     const effectiveSheetW = printableW - overlapMm;
     const effectiveSheetH = printableH - overlapMm;
 
-    if (targetRows) {
+    if (targetRows !== undefined) {
       const totalH_mm = targetRows * effectiveSheetH + overlapMm;
       const totalW_mm = totalH_mm * imgAspect;
       const calculatedCols = Math.max(1, Math.round((totalW_mm - overlapMm) / effectiveSheetW));
       setRows(targetRows);
       setCols(calculatedCols);
-    } else if (targetCols) {
+    } else if (targetCols !== undefined) {
       const totalW_mm = targetCols * effectiveSheetW + overlapMm;
       const totalH_mm = totalW_mm / imgAspect;
       const calculatedRows = Math.max(1, Math.round((totalH_mm - overlapMm) / effectiveSheetH));
@@ -256,7 +256,7 @@ export default function MuralisEditor() {
     }
   };
 
-  const SettingsContent = () => (
+  const renderSettings = () => (
     <div className="p-6 space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
@@ -516,7 +516,6 @@ export default function MuralisEditor() {
                   )}
                 </div>
 
-                {/* Botón de exportar móvil debajo de la previsualización */}
                 <div className="sm:hidden mt-6 pb-24">
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-black gap-3 h-14 rounded-2xl shadow-xl active:scale-[0.98] transition-all text-sm uppercase tracking-wider" 
@@ -532,13 +531,11 @@ export default function MuralisEditor() {
           )}
         </section>
 
-        {/* Panel de ajustes para Escritorio */}
         <aside className="hidden lg:block w-80 border-l border-border bg-white overflow-y-auto shadow-xl z-10">
-          <SettingsContent />
+          {renderSettings()}
         </aside>
       </main>
 
-      {/* Botón flotante y panel totalmente transparente para Móvil/Tablet */}
       {image && (
         <div className="lg:hidden fixed bottom-6 right-6 z-[60]">
           <Sheet>
@@ -578,7 +575,7 @@ export default function MuralisEditor() {
                     </Button>
                   </div>
                 </div>
-                <SettingsContent />
+                {renderSettings()}
               </div>
             </SheetContent>
           </Sheet>
