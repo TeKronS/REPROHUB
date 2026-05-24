@@ -43,8 +43,7 @@ import {
   SheetContent, 
   SheetHeader,
   SheetTitle,
-  SheetDescription,
-  SheetTrigger
+  SheetDescription
 } from "@/components/ui/sheet";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
@@ -752,7 +751,7 @@ export default function MuralisEditor() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col min-h-svh w-full font-body bg-white text-foreground">
+    <div className="flex flex-col min-h-svh w-full font-body bg-white text-foreground overflow-x-hidden">
       <header className="h-14 lg:h-16 border-b border-border bg-white flex items-center justify-between px-4 lg:px-6 z-50 shadow-sm shrink-0 sticky top-0">
         <div className="flex items-center gap-2 lg:gap-6">
           <Link href="/">
@@ -921,14 +920,17 @@ export default function MuralisEditor() {
       {image && (
         <div className="lg:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
           <Sheet open={isMenuOpen} onOpenChange={handleMenuOpenChange}>
-            <SheetTrigger asChild>
-              <Button 
-                size="icon" 
-                className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              >
-                <Settings2 className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
+            <Button 
+              size="icon" 
+              className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleMenuOpenChange(true);
+              }}
+            >
+              <Settings2 className="h-6 w-6" />
+            </Button>
             <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
               <SheetHeader className="sr-only">
                 <SheetTitle>{t.gridSettings}</SheetTitle>
