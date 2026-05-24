@@ -923,10 +923,10 @@ export default function MuralisEditor() {
             <Button 
               size="icon" 
               className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              onClick={(e) => {
+              onPointerDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handleMenuOpenChange(true);
+                handleMenuOpenChange(!isMenuOpen);
               }}
             >
               <Settings2 className="h-6 w-6" />
