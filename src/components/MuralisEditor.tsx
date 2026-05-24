@@ -16,17 +16,17 @@ import {
   Layers,
   Loader2,
   Maximize,
-  Link2,
-  ImageIcon,
-  Ruler,
-  Maximize2,
-  ChevronLeft,
   RefreshCcw,
   Plus,
-  Minus
+  Minus,
+  ChevronLeft,
+  Maximize2,
+  Ruler,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { 
   Select, 
   SelectContent, 
@@ -55,13 +55,13 @@ const PAPER_DIMENSIONS: Record<string, { width: number; height: number; format: 
   'Carta': { width: 215.9, height: 279.4, format: 'letter' },
   'A4': { width: 210, height: 297, format: 'a4' },
   'A3': { width: 297, height: 420, format: 'a3' },
-  'Oficio (Legal 35.5cm)': { width: 215.9, height: 35.56 * 10, format: 'legal' },
-  'Folio (33cm)': { width: 215.9, height: 33.02 * 10, format: 'folio' },
+  'Oficio (Legal 35.5cm)': { width: 215.9, height: 355.6, format: 'legal' },
+  'Folio (33cm)': { width: 215.9, height: 330.2, format: 'folio' },
   'Oficio (34cm)': { width: 216, height: 340, format: 'oficio' },
   'Extra Oficio (38cm)': { width: 216, height: 380, format: 'extra-oficio' }
 };
 
-const MAX_GRID_DIM = 12; 
+const MAX_GRID_DIM = 24; 
 
 export default function MuralisEditor() {
   const [mounted, setMounted] = useState(false);
@@ -77,6 +77,10 @@ export default function MuralisEditor() {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [showGuides, setShowGuides] = useState(true);
 
+  // States for target dimensions (cm)
+  const [targetWidth, setTargetWidth] = useState<string>('0');
+  const [targetHeight, setTargetHeight] = useState<string>('0');
+
   const [draftRows, setDraftRows] = useState(2);
   const [draftCols, setDraftCols] = useState(2);
   const [draftOverlap, setDraftOverlap] = useState(1.5);
@@ -85,6 +89,8 @@ export default function MuralisEditor() {
   const [draftPaperSize, setDraftPaperSize] = useState('Carta');
   const [draftOrientation, setDraftOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [draftShowGuides, setDraftShowGuides] = useState(true);
+  const [draftTargetWidth, setDraftTargetWidth] = useState<string>('0');
+  const [draftTargetHeight, setDraftTargetHeight] = useState<string>('0');
 
   const deferredRows = useDeferredValue(rows);
   const deferredCols = useDeferredValue(cols);
@@ -103,52 +109,133 @@ export default function MuralisEditor() {
 
   const t = translations[lang];
 
-  const calculateAutoGrid = useCallback((
-    imgW: number, 
-    imgH: number, 
-    setR: (v: number) => void,
-    setC: (v: number) => void,
-    pSize: string,
-    orient: 'portrait' | 'landscape',
-    mH: number,
-    mV: number,
-    ov: number,
-    targetRows?: number, 
-    targetCols?: number
+  // Helper to calculate required sheets and best orientation
+  const calculateOptimizedGrid = (
+    w_cm: number, 
+    h_cm: number, 
+    pSize: string, 
+    ov_cm: number, 
+    mV_cm: number, 
+    mH_cm: number
   ) => {
     const paperBase = PAPER_DIMENSIONS[pSize];
-    const paper = orient === 'portrait' 
-      ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
-      : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
+    const targetW_mm = w_cm * 10;
+    const targetH_mm = h_cm * 10;
+    const overlap_mm = ov_cm * 10;
+    const marginV_mm = mV_cm * 10;
+    const marginH_mm = mH_cm * 10;
 
-    const printableW = paper.width - (mH * 20);
-    const printableH = paper.height - (mV * 20);
-    const overlapMm = ov * 10;
-    const imgAspect = imgW / imgH;
-    const effectiveSheetW = printableW - overlapMm;
-    const effectiveSheetH = printableH - overlapMm;
+    const calcForOrientation = (orient: 'portrait' | 'landscape') => {
+      const paper = orient === 'portrait' 
+        ? { width: Math.min(paperBase.width, paperBase.height), height: Math.max(paperBase.width, paperBase.height) }
+        : { width: Math.max(paperBase.width, paperBase.height), height: Math.min(paperBase.width, paperBase.height) };
 
-    if (targetRows !== undefined) {
-      const totalH_mm = targetRows * effectiveSheetH + overlapMm;
-      const totalW_mm = totalH_mm * imgAspect;
-      const calculatedCols = Math.max(1, Math.min(MAX_GRID_DIM, Math.round((totalW_mm - overlapMm) / effectiveSheetW)));
-      setR(targetRows);
-      setC(calculatedCols);
-    } else if (targetCols !== undefined) {
-      const totalW_mm = targetCols * effectiveSheetW + overlapMm;
-      const totalH_mm = totalW_mm / imgAspect;
-      const calculatedRows = Math.max(1, Math.min(MAX_GRID_DIM, Math.round((totalH_mm - overlapMm) / effectiveSheetH)));
-      setC(targetCols);
-      setR(calculatedRows);
-    } else {
-      const initialCols = 3;
-      const totalW_mm = initialCols * effectiveSheetW + overlapMm;
-      const totalH_mm = totalW_mm / imgAspect;
-      const initialRows = Math.max(1, Math.min(MAX_GRID_DIM, Math.round((totalH_mm - overlapMm) / effectiveSheetH)));
-      setC(initialCols);
-      setR(initialRows);
+      const printableW = paper.width - (marginH_mm * 2);
+      const printableH = paper.height - (marginV_mm * 2);
+      const effectiveW = printableW - overlap_mm;
+      const effectiveH = printableH - overlap_mm;
+
+      const c = Math.ceil((targetW_mm - overlap_mm) / effectiveW);
+      const r = Math.ceil((targetH_mm - overlap_mm) / effectiveH);
+      
+      return { 
+        rows: Math.max(1, r), 
+        cols: Math.max(1, c), 
+        total: Math.max(1, r) * Math.max(1, c),
+        orientation: orient
+      };
+    };
+
+    const pResults = calcForOrientation('portrait');
+    const lResults = calcForOrientation('landscape');
+
+    // Choose orientation with fewest sheets, default to portrait on tie
+    return pResults.total <= lResults.total ? pResults : lResults;
+  };
+
+  const handleWidthChange = (val: string, isDraft: boolean) => {
+    if (!image) return;
+    const num = parseFloat(val);
+    const aspect = image.width / image.height;
+    const newHeight = num / aspect;
+
+    const setW = isDraft ? setDraftTargetWidth : setTargetWidth;
+    const setH = isDraft ? setDraftTargetHeight : setTargetHeight;
+    const setR = isDraft ? setDraftRows : setRows;
+    const setC = isDraft ? setDraftCols : setCols;
+    const setO = isDraft ? setDraftOrientation : setOrientation;
+
+    setW(val);
+    setH(newHeight.toFixed(1));
+
+    if (!isNaN(num) && num > 0) {
+      const opt = calculateOptimizedGrid(
+        num, 
+        newHeight, 
+        isDraft ? draftPaperSize : paperSize, 
+        isDraft ? draftOverlap : overlap, 
+        isDraft ? draftMarginV : marginV, 
+        isDraft ? draftMarginH : marginH
+      );
+      setR(opt.rows);
+      setC(opt.cols);
+      setO(opt.orientation);
     }
-  }, []);
+  };
+
+  const handleHeightChange = (val: string, isDraft: boolean) => {
+    if (!image) return;
+    const num = parseFloat(val);
+    const aspect = image.width / image.height;
+    const newWidth = num * aspect;
+
+    const setW = isDraft ? setDraftTargetWidth : setTargetWidth;
+    const setH = isDraft ? setDraftTargetHeight : setTargetHeight;
+    const setR = isDraft ? setDraftRows : setRows;
+    const setC = isDraft ? setDraftCols : setCols;
+    const setO = isDraft ? setDraftOrientation : setOrientation;
+
+    setH(val);
+    setW(newWidth.toFixed(1));
+
+    if (!isNaN(num) && num > 0) {
+      const opt = calculateOptimizedGrid(
+        newWidth, 
+        num, 
+        isDraft ? draftPaperSize : paperSize, 
+        isDraft ? draftOverlap : overlap, 
+        isDraft ? draftMarginV : marginV, 
+        isDraft ? draftMarginH : marginH
+      );
+      setR(opt.rows);
+      setC(opt.cols);
+      setO(opt.orientation);
+    }
+  };
+
+  const updateGridFromInputs = (isDraft: boolean) => {
+    const w = parseFloat(isDraft ? draftTargetWidth : targetWidth);
+    const h = parseFloat(isDraft ? draftTargetHeight : targetHeight);
+    if (!isNaN(w) && w > 0) {
+      const opt = calculateOptimizedGrid(
+        w, 
+        h, 
+        isDraft ? draftPaperSize : paperSize, 
+        isDraft ? draftOverlap : overlap, 
+        isDraft ? draftMarginV : marginV, 
+        isDraft ? draftMarginH : marginH
+      );
+      if (isDraft) {
+        setDraftRows(opt.rows);
+        setDraftCols(opt.cols);
+        setDraftOrientation(opt.orientation);
+      } else {
+        setRows(opt.rows);
+        setCols(opt.cols);
+        setOrientation(opt.orientation);
+      }
+    }
+  };
 
   const handleMenuOpenChange = (open: boolean) => {
     if (open) {
@@ -160,6 +247,8 @@ export default function MuralisEditor() {
       setDraftPaperSize(paperSize);
       setDraftOrientation(orientation);
       setDraftShowGuides(showGuides);
+      setDraftTargetWidth(targetWidth);
+      setDraftTargetHeight(targetHeight);
     } else {
       setRows(draftRows);
       setCols(draftCols);
@@ -169,6 +258,8 @@ export default function MuralisEditor() {
       setPaperSize(draftPaperSize);
       setOrientation(draftOrientation);
       setShowGuides(draftShowGuides);
+      setTargetWidth(draftTargetWidth);
+      setTargetHeight(draftTargetHeight);
     }
     setIsMenuOpen(open);
   };
@@ -178,7 +269,15 @@ export default function MuralisEditor() {
     img.src = url;
     img.onload = () => {
       setImage({ file, url, width: img.width, height: img.height });
-      calculateAutoGrid(img.width, img.height, setRows, setCols, paperSize, orientation, marginH, marginV, overlap);
+      const initialW = 100; // 1 meter default width
+      const initialH = 100 / (img.width / img.height);
+      setTargetWidth(initialW.toString());
+      setTargetHeight(initialH.toFixed(1));
+      
+      const opt = calculateOptimizedGrid(initialW, initialH, paperSize, overlap, marginV, marginH);
+      setRows(opt.rows);
+      setCols(opt.cols);
+      setOrientation(opt.orientation);
     };
   };
 
@@ -338,6 +437,8 @@ export default function MuralisEditor() {
     setCurrentOrientation: (v: 'portrait' | 'landscape') => void,
     currentShowGuides: boolean,
     setCurrentShowGuides: (v: boolean) => void,
+    curWidth: string,
+    curHeight: string,
     info: any,
     isMobile?: boolean
   ) => (
@@ -351,14 +452,39 @@ export default function MuralisEditor() {
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-primary/10 shadow-sm">
-          <div className="flex items-center gap-2">
+        {/* Dimension Inputs Section */}
+        <div className="bg-white p-4 rounded-xl border border-primary/10 shadow-sm space-y-3">
+          <div className="flex items-center gap-2 mb-1">
             <Maximize2 className="h-3.5 w-3.5 text-primary" />
             <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{t.finalMeasures}</Label>
+            <div className="ml-auto flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded">
+              <Zap className="h-2.5 w-2.5 text-accent" />
+              <span className="text-[8px] font-black text-accent uppercase">{lang === 'es' ? 'Auto-Orientación' : 'Auto-Orientation'}</span>
+            </div>
           </div>
-          <span className="text-xs font-black text-foreground">
-            {info ? `${info.imgW} x ${info.imgH} cm` : '--'}
-          </span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-[8px] font-bold text-muted-foreground uppercase">{t.width}</Label>
+              <Input 
+                type="number" 
+                value={curWidth} 
+                onChange={(e) => handleWidthChange(e.target.value, !!isMobile)}
+                className="h-9 font-black text-sm text-primary bg-primary/5 border-primary/20"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[8px] font-bold text-muted-foreground uppercase">{t.height}</Label>
+              <Input 
+                type="number" 
+                value={curHeight} 
+                onChange={(e) => handleHeightChange(e.target.value, !!isMobile)}
+                className="h-9 font-black text-sm text-primary bg-primary/5 border-primary/20"
+              />
+            </div>
+          </div>
+          <p className="text-[9px] text-muted-foreground font-medium leading-tight">
+            {t.optimizationNote}
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -367,17 +493,11 @@ export default function MuralisEditor() {
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentRows}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
-              const newVal = Math.max(1, currentRows - 1);
-              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
-            }}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentRows(Math.max(1, currentRows - 1))}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentRows]} onValueChange={(v) => image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, v[0]) : setCurrentRows(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
-              const newVal = Math.min(MAX_GRID_DIM, currentRows + 1);
-              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, newVal);
-            }}>
+            <Slider value={[currentRows]} onValueChange={(v) => setCurrentRows(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentRows(Math.min(MAX_GRID_DIM, currentRows + 1))}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -389,17 +509,11 @@ export default function MuralisEditor() {
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentCols}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
-              const newVal = Math.max(1, currentCols - 1);
-              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
-            }}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentCols(Math.max(1, currentCols - 1))}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentCols]} onValueChange={(v) => image ? calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, v[0]) : setCurrentCols(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
-              const newVal = Math.min(MAX_GRID_DIM, currentCols + 1);
-              if (image) calculateAutoGrid(image.width, image.height, setCurrentRows, setCurrentCols, currentPaperSize, currentOrientation, currentMarginH, currentMarginV, currentOverlap, undefined, newVal);
-            }}>
+            <Slider value={[currentCols]} onValueChange={(v) => setCurrentCols(v[0])} min={1} max={MAX_GRID_DIM} step={1} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentCols(Math.min(MAX_GRID_DIM, currentCols + 1))}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -410,7 +524,10 @@ export default function MuralisEditor() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.paperSize}</Label>
-            <Select value={currentPaperSize} onValueChange={(v) => setCurrentPaperSize(v)}>
+            <Select value={currentPaperSize} onValueChange={(v) => {
+              setCurrentPaperSize(v);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectContent>
                 {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
@@ -438,11 +555,22 @@ export default function MuralisEditor() {
             <span className="text-xs font-black text-accent bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentOverlap} cm</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => setCurrentOverlap(Math.max(0, parseFloat((currentOverlap - 0.1).toFixed(1))))}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => {
+              const newVal = Math.max(0, parseFloat((currentOverlap - 0.1).toFixed(1)));
+              setCurrentOverlap(newVal);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentOverlap]} onValueChange={(v) => setCurrentOverlap(v[0])} min={0} max={10} step={0.1} className="flex-1" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => setCurrentOverlap(Math.min(10, parseFloat((currentOverlap + 0.1).toFixed(1))))}>
+            <Slider value={[currentOverlap]} onValueChange={(v) => {
+              setCurrentOverlap(v[0]);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }} min={0} max={10} step={0.1} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => {
+              const newVal = Math.min(10, parseFloat((currentOverlap + 0.1).toFixed(1)));
+              setCurrentOverlap(newVal);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -456,11 +584,22 @@ export default function MuralisEditor() {
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginV} cm</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginV(Math.max(0, currentMarginV - 0.5))}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.max(0, currentMarginV - 0.5);
+              setCurrentMarginV(newVal);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentMarginV]} onValueChange={(v) => setCurrentMarginV(v[0])} min={0} max={5} step={0.5} className="flex-1" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginV(Math.min(5, currentMarginV + 0.5))}>
+            <Slider value={[currentMarginV]} onValueChange={(v) => {
+              setCurrentMarginV(v[0]);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }} min={0} max={5} step={0.5} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.min(5, currentMarginV + 0.5);
+              setCurrentMarginV(newVal);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -474,11 +613,22 @@ export default function MuralisEditor() {
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginH} cm</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginH(Math.max(0, currentMarginH - 0.5))}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.max(0, currentMarginH - 0.5);
+              setCurrentMarginH(newVal);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <Minus className="h-3 w-3" />
             </Button>
-            <Slider value={[currentMarginH]} onValueChange={(v) => setCurrentMarginH(v[0])} min={0} max={5} step={0.5} className="flex-1" />
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => setCurrentMarginH(Math.min(5, currentMarginH + 0.5))}>
+            <Slider value={[currentMarginH]} onValueChange={(v) => {
+              setCurrentMarginH(v[0]);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }} min={0} max={5} step={0.5} className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
+              const newVal = Math.min(5, currentMarginH + 0.5);
+              setCurrentMarginH(newVal);
+              setTimeout(() => updateGridFromInputs(!!isMobile), 0);
+            }}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -494,7 +644,7 @@ export default function MuralisEditor() {
         <div className="p-3 bg-white/90 rounded-xl border border-white/40 shadow-xl space-y-2">
           <div className="flex items-center gap-2 mb-0.5">
             <Ruler className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t.finalMeasures}</span>
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{lang === 'es' ? 'Resumen Técnico' : 'Technical Summary'}</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -682,13 +832,14 @@ export default function MuralisEditor() {
             paperSize, setPaperSize,
             orientation, setOrientation,
             showGuides, setShowGuides,
+            targetWidth, targetHeight,
             physicalInfo
           )}
         </aside>
       </main>
 
       {image && (
-        <Sheet open={isMenuOpen} onOpenChange={handleMenuOpenChange} modal={false}>
+        <Sheet open={isMenuOpen} onOpenChange={handleMenuOpenChange}>
           <SheetTrigger asChild>
             <div className="lg:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
               <Button 
@@ -699,7 +850,7 @@ export default function MuralisEditor() {
               </Button>
             </div>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col border-l border-border/20">
+          <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
             <SheetHeader className="sr-only">
               <SheetTitle>{t.gridSettings}</SheetTitle>
               <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
@@ -749,6 +900,7 @@ export default function MuralisEditor() {
                 draftPaperSize, setDraftPaperSize,
                 draftOrientation, setDraftOrientation,
                 draftShowGuides, setDraftShowGuides,
+                draftTargetWidth, draftTargetHeight,
                 draftInfo,
                 true
               )}
