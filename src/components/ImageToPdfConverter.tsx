@@ -204,7 +204,31 @@ export default function ImageToPdfConverter() {
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Workspace */}
+        {/* Left Column - Pages Thumbnails */}
+        <aside className="hidden md:flex w-[80px] bg-white border-r border-border flex-col items-center py-4 gap-3 overflow-y-auto shrink-0 shadow-inner z-10">
+          {images.map((img, idx) => (
+            <div 
+              key={img.id} 
+              className="relative w-14 aspect-[3/4] border-2 border-slate-200 rounded-md overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer"
+              title={img.name}
+            >
+              <img src={img.url} alt="" className="w-full h-full object-cover" />
+              <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[8px] font-black text-white px-1 py-0.5 rounded-br-md shadow-sm">
+                {idx + 1}
+              </div>
+            </div>
+          ))}
+          {images.length > 0 && (
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-14 h-14 border-2 border-dashed border-slate-300 rounded-md flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
+        </aside>
+
+        {/* Workspace - Center */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50">
           <div className="max-w-4xl mx-auto space-y-6">
             {images.length === 0 ? (
@@ -265,8 +289,8 @@ export default function ImageToPdfConverter() {
           </div>
         </div>
 
-        {/* Sidebar Settings */}
-        <aside className="w-full lg:w-80 bg-white border-l border-border shadow-xl p-6 overflow-y-auto z-10">
+        {/* Sidebar Settings - Right */}
+        <aside className="w-full lg:w-80 bg-white border-l border-border shadow-xl p-6 overflow-y-auto z-20">
           <div className="space-y-8">
             <div className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-primary" />
