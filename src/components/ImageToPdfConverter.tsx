@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -14,7 +15,9 @@ import {
   Image as ImageIcon,
   MoveUp,
   MoveDown,
-  X
+  X,
+  PlusCircle,
+  GripVertical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -61,6 +64,13 @@ export default function ImageToPdfConverter() {
   const [fitMode, setFitMode] = useState<'fit' | 'fill'>('fit');
   const [isExporting, setIsExporting] = useState(false);
 
+  const paper = useMemo(() => PAPER_DIMENSIONS[paperSize], [paperSize]);
+  const aspectRatio = useMemo(() => {
+    return orientation === 'portrait' 
+      ? paper.width / paper.height 
+      : paper.height / paper.width;
+  }, [paper, orientation]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -96,7 +106,6 @@ export default function ImageToPdfConverter() {
     setIsExporting(true);
 
     try {
-      const paper = PAPER_DIMENSIONS[paperSize];
       const pdf = new jsPDF({
         orientation: orientation === 'portrait' ? 'p' : 'l',
         unit: 'mm',
@@ -135,7 +144,6 @@ export default function ImageToPdfConverter() {
           x = marginMm + (usableWidth - drawW) / 2;
           y = marginMm + (usableHeight - drawH) / 2;
         } else {
-          // Fill mode
           if (imgRatio > pageRatio) {
             drawH = usableHeight;
             drawW = usableHeight * imgRatio;
@@ -152,7 +160,6 @@ export default function ImageToPdfConverter() {
         canvas.height = htmlImg.height;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          // Fill with white to prevent black background on transparent images
           ctx.fillStyle = "white";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(htmlImg, 0, 0);
@@ -211,6 +218,9 @@ export default function ImageToPdfConverter() {
               key={img.id} 
               className="relative w-14 aspect-[3/4] border-2 border-slate-200 rounded-md overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer"
               title={img.name}
+              onClick={() => {
+                document.getElementById(`page-${img.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
             >
               <img src={img.url} alt="" className="w-full h-full object-cover" />
               <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[8px] font-black text-white px-1 py-0.5 rounded-br-md shadow-sm">
@@ -218,23 +228,21 @@ export default function ImageToPdfConverter() {
               </div>
             </div>
           ))}
-          {images.length > 0 && (
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-14 h-14 border-2 border-dashed border-slate-300 rounded-md flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          )}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-14 h-14 border-2 border-dashed border-slate-300 rounded-md flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
         </aside>
 
-        {/* Workspace - Center */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50">
-          <div className="max-w-4xl mx-auto space-y-6">
+        {/* Workspace - Center: Vertical Page List */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50 scroll-smooth">
+          <div className="max-w-3xl mx-auto flex flex-col items-center gap-8">
             {images.length === 0 ? (
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center min-h-[400px] border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group"
+                className="flex flex-col items-center justify-center min-h-[400px] w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group"
               >
                 <div className="p-6 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
                   <Plus className="h-12 w-12 text-primary" />
@@ -251,40 +259,78 @@ export default function ImageToPdfConverter() {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-                {images.map((img, idx) => (
-                  <Card key={img.id} className="group relative aspect-[3/4] overflow-hidden rounded-2xl shadow-lg border-2 border-white bg-white hover:border-primary/50 transition-all">
-                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-4">
-                      <div className="flex justify-end gap-2">
-                        <Button size="icon" variant="destructive" className="h-8 w-8 rounded-lg" onClick={() => removeImage(img.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <span className="text-white text-[10px] font-bold truncate bg-black/20 px-2 py-1 rounded backdrop-blur-sm">{img.name}</span>
-                        <div className="flex items-center gap-1">
-                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-lg" onClick={() => moveImage(idx, 'up')} disabled={idx === 0}>
-                            <MoveUp className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-lg" onClick={() => moveImage(idx, 'down')} disabled={idx === images.length - 1}>
-                            <MoveDown className="h-4 w-4" />
-                          </Button>
-                          <span className="ml-auto text-white font-black text-xl">#{idx + 1}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-[3/4] border-2 border-dashed border-primary/30 rounded-2xl flex flex-col items-center justify-center hover:bg-primary/5 hover:border-primary transition-all group"
+              images.map((img, idx) => (
+                <div 
+                  key={img.id} 
+                  id={`page-${img.id}`}
+                  className="relative group w-full max-w-[500px]"
                 >
-                  <Plus className="h-8 w-8 text-primary/50 group-hover:text-primary" />
-                  <span className="mt-2 text-xs font-black text-primary/50 group-hover:text-primary uppercase tracking-widest">{t.addImages}</span>
-                  <input type="file" ref={fileInputRef} multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
-                </button>
-              </div>
+                  <div className="absolute -left-12 top-0 h-full flex flex-col gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      size="icon" 
+                      variant="destructive" 
+                      className="h-8 w-8 rounded-lg shadow-lg" 
+                      onClick={() => removeImage(img.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="secondary" 
+                      className="h-8 w-8 rounded-lg shadow-lg" 
+                      onClick={() => moveImage(idx, 'up')} 
+                      disabled={idx === 0}
+                    >
+                      <MoveUp className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="secondary" 
+                      className="h-8 w-8 rounded-lg shadow-lg" 
+                      onClick={() => moveImage(idx, 'down')} 
+                      disabled={idx === images.length - 1}
+                    >
+                      <MoveDown className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Página {idx + 1}</span>
+                    <span className="text-[10px] font-bold text-slate-400 truncate max-w-[200px]">{img.name}</span>
+                  </div>
+
+                  <div 
+                    className="relative w-full bg-white shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-sm overflow-hidden border border-slate-200"
+                    style={{ aspectRatio: `${aspectRatio}` }}
+                  >
+                    <div 
+                      className="absolute inset-0 bg-white" 
+                      style={{ padding: `${margin}cm` }}
+                    >
+                      <img 
+                        src={img.url} 
+                        alt={img.name} 
+                        className={cn(
+                          "w-full h-full",
+                          fitMode === 'fit' ? 'object-contain' : 'object-cover'
+                        )} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+            
+            {images.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="w-full max-w-[500px] h-20 border-2 border-dashed border-primary/20 hover:border-primary/40 hover:bg-white text-primary/60 font-black gap-2 rounded-xl"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <PlusCircle className="h-5 w-5" />
+                {t.addImages}
+                <input type="file" ref={fileInputRef} multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
+              </Button>
             )}
           </div>
         </div>
@@ -347,9 +393,9 @@ export default function ImageToPdfConverter() {
                   <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMargin(Math.max(0, margin - 0.5))}>
                     <X className="h-3 w-3 rotate-45" />
                   </Button>
-                  <div className="flex-1 h-1 bg-slate-100 rounded-full relative">
+                  <div className="flex-1 h-1 bg-slate-100 rounded-full relative overflow-hidden">
                     <div 
-                      className="absolute h-full bg-primary rounded-full" 
+                      className="absolute h-full bg-primary rounded-full transition-all" 
                       style={{ width: `${(margin / 5) * 100}%` }}
                     />
                   </div>
@@ -384,7 +430,7 @@ export default function ImageToPdfConverter() {
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full text-slate-400 hover:text-destructive font-bold text-xs"
+                className="w-full text-slate-400 hover:text-destructive transition-colors font-bold text-xs"
                 onClick={() => setImages([])}
                 disabled={images.length === 0}
               >
