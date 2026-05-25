@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useRef } from "react";
@@ -56,9 +55,9 @@ export default function ImageToPdfConverter() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [images, setImages] = useState<ImageData[]>([]);
-  const [paperSize, setPaperSize] = useState('A4');
+  const [paperSize, setPaperSize] = useState('Carta');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-  const [margin, setMargin] = useState(0);
+  const [margin, setMargin] = useState(1);
   const [fitMode, setFitMode] = useState<'fit' | 'fill'>('fit');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -192,7 +191,7 @@ export default function ImageToPdfConverter() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <LanguageSelector language={lang} setLanguage={setLang} />
+          <LanguageSelector language={lang} setLanguage={setLanguage} />
           <Button 
             className="hidden sm:flex bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-md"
             onClick={exportPdf}
@@ -356,7 +355,7 @@ export default function ImageToPdfConverter() {
                 onClick={exportPdf}
                 disabled={images.length === 0 || isExporting}
               >
-                {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5" />}
+                {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-4 w-4" />}
                 {isExporting ? t.generating : t.export}
               </Button>
               <Button 
