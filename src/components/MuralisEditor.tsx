@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
@@ -316,7 +317,6 @@ export default function MuralisEditor() {
         const effectiveW = printableW - overlapMm;
         const effectiveH = printableH - overlapMm;
 
-        // Intentar llenar una cuadrícula de 2x2 (4 hojas)
         const targetGridW = (2 * effectiveW) + overlapMm;
         const targetGridH = (2 * effectiveH) + overlapMm;
 
@@ -439,6 +439,7 @@ export default function MuralisEditor() {
           if (sw > 0 && sh > 0) {
             canvas.width = Math.max(1, sw);
             canvas.height = Math.max(1, sh);
+            // Ensure white background for transparent images
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
@@ -686,7 +687,7 @@ export default function MuralisEditor() {
           <div className="flex justify-between items-center">
             <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Maximize className="h-3 w-3" /> {t.marginsVertical}
-            </Label>
+            </Label flash-image>
             <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginV} cm</span>
           </div>
           <div className="flex items-center gap-2">

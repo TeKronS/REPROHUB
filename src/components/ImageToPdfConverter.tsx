@@ -146,17 +146,20 @@ export default function ImageToPdfConverter() {
           }
           x = marginMm + (usableWidth - drawW) / 2;
           y = marginMm + (usableHeight - drawH) / 2;
-          // Note: In fill mode we center it, it might bleed off margins but we set clipping if needed
-          // For simplicity in jsPDF addImage handles basic scaling
         }
 
         const canvas = document.createElement('canvas');
         canvas.width = htmlImg.width;
         canvas.height = htmlImg.height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(htmlImg, 0, 0);
+        if (ctx) {
+          // Fill with white to prevent black background on transparent images
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(htmlImg, 0, 0);
+        }
+        
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-
         pdf.addImage(dataUrl, 'JPEG', x, y, drawW, drawH);
       }
 
