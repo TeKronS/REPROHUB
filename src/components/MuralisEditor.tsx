@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
@@ -458,7 +457,7 @@ export default function MuralisEditor() {
           }
           pdf.setFontSize(7);
           pdf.setTextColor(180);
-          pdf.text(`REPROHUB | MURALIS | PANEL ${r+1}-${c+1} | ${activePaperSize} (${activeOrientation === 'portrait' ? 'P' : 'L'})`, activeMarginH * 10, paper.height - (activeMarginV * 5));
+          pdf.text(`MULTIPRINTTOOLS | MURALIS | PANEL ${r+1}-${c+1} | ${activePaperSize} (${activeOrientation === 'portrait' ? 'P' : 'L'})`, activeMarginH * 10, paper.height - (activeMarginV * 5));
         }
       }
       pdf.save(`muralis-grid-${Date.now()}.pdf`);
@@ -789,7 +788,7 @@ export default function MuralisEditor() {
             <div className="w-6 h-6 lg:w-8 lg:h-8 relative overflow-hidden rounded-lg shadow-sm bg-white border border-border/10">
               <Image 
                 src={logo} 
-                alt="ReproHub Logo" 
+                alt="MultiprintTools Logo" 
                 fill 
                 className="object-contain"
               />

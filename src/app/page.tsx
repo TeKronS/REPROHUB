@@ -64,13 +64,13 @@ export default function Home() {
           <div className="w-10 h-10 relative overflow-hidden rounded-xl shadow-lg shadow-primary/20 bg-white border border-border/10">
             <Image 
               src={logo} 
-              alt="ReproHub Logo" 
+              alt="MultiprintTools Logo" 
               fill 
               className="object-contain"
             />
           </div>
           <span className="text-2xl font-headline font-black tracking-tighter text-foreground uppercase">
-            REPRO<span className="text-primary">HUB</span>
+            MULTI<span className="text-primary">PRINT</span>
           </span>
         </div>
         <div className="flex items-center gap-6">
