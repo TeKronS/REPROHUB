@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -9,7 +10,8 @@ import {
   Image as ImageIcon, 
   Calculator, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  FileText
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,12 +33,12 @@ export default function Home() {
       badge: t.popular
     },
     {
-      title: t.pdfMasterTitle,
-      description: t.pdfMasterDesc,
-      icon: <FileStack className="h-8 w-8 text-blue-500" />,
-      href: "#",
-      status: "coming-soon",
-      badge: t.comingSoon
+      title: t.imgToPdfTitle,
+      description: t.imgToPdfDesc,
+      icon: <FileText className="h-8 w-8 text-blue-500" />,
+      href: "/image-to-pdf",
+      status: "active",
+      badge: "PRO"
     },
     {
       title: t.resizerTitle,

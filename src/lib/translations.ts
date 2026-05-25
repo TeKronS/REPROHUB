@@ -52,7 +52,17 @@ export const translations = {
     costoTitle: 'Costo Print',
     costoDesc: 'Advanced quote calculator based on ink coverage, paper type and machine time.',
     comingSoon: 'Coming Soon',
-    popular: 'Popular'
+    popular: 'Popular',
+    // Image to PDF
+    imgToPdfTitle: 'Image to PDF',
+    imgToPdfDesc: 'Convert one or more images into a single professional PDF document.',
+    addImages: 'Add Images',
+    clearAll: 'Clear All',
+    imageFit: 'Image Fit',
+    fit: 'Fit to Page',
+    fill: 'Fill Page',
+    generating: 'Generating PDF...',
+    noImages: 'No images added yet'
   },
   es: {
     title: 'MURALIS',
@@ -104,6 +114,16 @@ export const translations = {
     costoTitle: 'Costo Print',
     costoDesc: 'Calculadora avanzada de presupuestos basada en cobertura de tinta, tipo de papel y tiempo de máquina.',
     comingSoon: 'Próximamente',
-    popular: 'Popular'
+    popular: 'Popular',
+    // Image to PDF
+    imgToPdfTitle: 'Imagen a PDF',
+    imgToPdfDesc: 'Convierte una o más imágenes en un único documento PDF profesional.',
+    addImages: 'Añadir Imágenes',
+    clearAll: 'Limpiar Todo',
+    imageFit: 'Ajuste de Imagen',
+    fit: 'Ajustar a la página',
+    fill: 'Llenar página',
+    generating: 'Generando PDF...',
+    noImages: 'Aún no hay imágenes'
   }
 };
