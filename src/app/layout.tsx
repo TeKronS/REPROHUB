@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MultiprintTools | Herramientas Profesionales de Reprografía',
+  title: 'MultiPrintTools | Herramientas Profesionales de Reprografía',
   description: 'Suite de herramientas digitales para expertos en impresión y artes gráficas.',
   icons: {
     icon: '/icono.png',
