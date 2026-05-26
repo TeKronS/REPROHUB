@@ -540,7 +540,7 @@ export default function ImageToPdfConverter() {
         </aside>
 
         {expandedImagesList.length > 0 && (
-          <div className="lg:hidden fixed bottom-6 left-6 right-24 z-[100] pointer-events-auto animate-in slide-in-from-bottom-10 duration-500">
+          <div className="lg:hidden fixed bottom-6 left-6 md:left-[104px] right-24 z-[100] pointer-events-auto animate-in slide-in-from-bottom-10 duration-500">
             <Button 
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-2xl transition-all active:scale-95 text-sm uppercase tracking-widest border-4 border-white/10"
               onClick={exportPdf}
