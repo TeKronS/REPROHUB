@@ -366,7 +366,7 @@ export default function ImageToPdfConverter() {
               <div className="flex-1 flex items-center justify-center h-full w-full">
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center min-h-[400px] h-full w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
+                  className="flex flex-col items-center justify-center min-h-[150px] h-full w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
                 >
                   <div className="p-6 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
                     <Plus className="h-12 w-12 text-primary" />
