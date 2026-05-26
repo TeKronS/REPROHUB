@@ -54,7 +54,6 @@ export default function PdfToWordConverter() {
       return new Promise((resolve, reject) => {
         if (typeof document === 'undefined') return;
         
-        // Evitar duplicados
         if (document.querySelector(`script[src="${url}"]`)) {
           resolve(true);
           return;
@@ -75,12 +74,10 @@ export default function PdfToWordConverter() {
     const loadAllLibs = async () => {
       console.log("Iniciando carga de motores de reprografía local...");
       try {
-        // Carga secuencial para asegurar disponibilidad
         for (const lib of LIBS) {
           await loadScript(lib.url);
         }
         
-        // Configuración de PDF.js
         if ((window as any).pdfjsLib) {
           (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS[1].url;
         }
@@ -133,9 +130,9 @@ export default function PdfToWordConverter() {
     setProgress(5);
 
     try {
-      const { Document, Packer, Paragraph, TextRun } = docx;
+      const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
 
-      console.log("Extrayendo texto del PDF...");
+      console.log("Analizando estructura del PDF...");
       const arrayBuffer = await pdfFile.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
@@ -146,57 +143,100 @@ export default function PdfToWordConverter() {
       for (let i = 1; i <= numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        
-        let lastY = -1;
-        let currentLine = "";
+        const items = textContent.items as any[];
 
-        textContent.items.forEach((item: any) => {
+        // Agrupación espacial mejorada
+        // Ordenamos por posición Y (arriba a abajo) y luego por X (izquierda a derecha)
+        items.sort((a, b) => {
+          const yDiff = b.transform[5] - a.transform[5];
+          if (Math.abs(yDiff) > 2) return yDiff; // Tolerancia de línea
+          return a.transform[4] - b.transform[4];
+        });
+
+        let lines: any[][] = [];
+        let currentLine: any[] = [];
+        let lastY = -1;
+
+        items.forEach(item => {
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
-            if (currentLine.trim()) {
-              docChildren.push(new Paragraph({
-                children: [new TextRun(currentLine)],
-              }));
-            }
-            currentLine = item.str;
+            lines.push(currentLine);
+            currentLine = [item];
           } else {
-            currentLine += (currentLine ? " " : "") + item.str;
+            currentLine.push(item);
           }
           lastY = item.transform[5];
         });
+        if (currentLine.length > 0) lines.push(currentLine);
 
-        if (currentLine.trim()) {
-          docChildren.push(new Paragraph({
-            children: [new TextRun(currentLine)],
-          }));
-        }
+        // Procesamos cada línea detectada
+        lines.forEach(line => {
+          let lineText = "";
+          let lastX = -1;
+          let lastWidth = 0;
 
+          line.forEach(item => {
+            // Detección de espacios entre palabras basada en coordenadas X
+            if (lastX !== -1) {
+              const gap = item.transform[4] - (lastX + lastWidth);
+              if (gap > 2) lineText += " "; 
+            }
+            lineText += item.str;
+            lastX = item.transform[4];
+            lastWidth = item.width;
+          });
+
+          if (lineText.trim()) {
+            docChildren.push(new Paragraph({
+              children: [new TextRun({
+                text: lineText,
+                size: 22, // 11pt aprox
+                font: "Inter"
+              })],
+              spacing: { after: 120 },
+              alignment: AlignmentType.LEFT
+            }));
+          }
+        });
+
+        // Salto de página
         if (i < numPages) {
           docChildren.push(new Paragraph({
             children: [new TextRun({ text: "", break: 1 })],
           }));
         }
 
-        setProgress(10 + (Math.round((i / numPages) * 80)));
+        setProgress(10 + (Math.round((i / numPages) * 85)));
       }
 
-      console.log("Generando archivo .docx local...");
+      console.log("Finalizando documento .docx...");
       const doc = new Document({
+        creator: "MultiPrintTools",
+        title: pdfFile.name,
         sections: [{
-          properties: {},
+          properties: {
+            page: {
+              margin: {
+                top: 1440, // 1 inch
+                right: 1440,
+                bottom: 1440,
+                left: 1440,
+              },
+            },
+          },
           children: docChildren,
         }],
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, pdfFile.name.replace(".pdf", ".docx"));
+      saveAs(blob, pdfFile.name.replace(/\.[^/.]+$/, "") + ".docx");
       
       setProgress(100);
       toast({
-        title: "¡Éxito!",
-        description: "El archivo Word ha sido generado y descargado."
+        title: "¡Conversión Finalizada!",
+        description: "El archivo Word ha sido generado con estructura mejorada."
       });
     } catch (error: any) {
-      console.error("Fallo en la conversión local:", error);
+      console.error("Fallo en la conversión avanzada:", error);
       toast({
         variant: "destructive",
         title: "Error de conversión",
@@ -239,7 +279,7 @@ export default function PdfToWordConverter() {
               {t.pdfToWordTitle}
             </h2>
             <p className="text-slate-500 font-medium max-w-md mx-auto">
-              {t.pdfToWordDesc}
+              Motor de extracción avanzada 100% local. Mantiene la privacidad de tus datos.
             </p>
           </div>
 
@@ -296,7 +336,7 @@ export default function PdfToWordConverter() {
                 {isConverting && (
                   <div className="space-y-3">
                     <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
-                      <span>Procesando en el navegador...</span>
+                      <span>Analizando estructura espacial...</span>
                       <span>{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-3 bg-primary/10 rounded-full" />
@@ -313,7 +353,7 @@ export default function PdfToWordConverter() {
                   ) : (
                     <FileCheck className="h-6 w-6 mr-2" />
                   )}
-                  {isConverting ? "Procesando..." : t.downloadDocx}
+                  {isConverting ? "Reconstruyendo..." : t.downloadDocx}
                 </Button>
               </div>
             )}
@@ -324,9 +364,9 @@ export default function PdfToWordConverter() {
               <FileCheck className="h-5 w-5 text-emerald-600 shrink-0" />
             </div>
             <div className="space-y-0.5">
-              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Seguridad Local</p>
+              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Motor de Reconstrucción Local</p>
               <p className="text-[10px] font-bold text-emerald-700/80 leading-tight">
-                La conversión ocurre 100% en tu equipo. Tus datos nunca se suben a ningún servidor.
+                Utilizamos análisis de coordenadas para agrupar líneas y detectar palabras, mejorando la fidelidad del texto extraído.
               </p>
             </div>
           </div>
