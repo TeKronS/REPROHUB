@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -16,7 +16,9 @@ import {
   MoveDown,
   X,
   PlusCircle,
-  GripVertical
+  GripVertical,
+  ArrowLeft,
+  ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -58,6 +60,7 @@ interface ImageData {
 }
 
 export default function ImageToPdfConverter() {
+  const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Language>('es');
   const t = translations[lang];
   const { toast } = useToast();
@@ -71,6 +74,10 @@ export default function ImageToPdfConverter() {
   const [isExporting, setIsExporting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const paper = useMemo(() => PAPER_DIMENSIONS[paperSize], [paperSize]);
   const aspectRatio = useMemo(() => {
     return orientation === 'portrait' 
@@ -83,7 +90,7 @@ export default function ImageToPdfConverter() {
     if (!files) return;
 
     const newImages: ImageData[] = Array.from(files).map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 9),
       url: URL.createObjectURL(file),
       file,
       name: file.name
@@ -148,8 +155,6 @@ export default function ImageToPdfConverter() {
             drawH = usableHeight;
             drawW = usableHeight * imgRatio;
           }
-          x = marginMm + (usableWidth - drawW) / 2;
-          y = marginMm + (usableHeight - drawH) / 2;
         } else {
           if (imgRatio > pageRatio) {
             drawH = usableHeight;
@@ -158,9 +163,10 @@ export default function ImageToPdfConverter() {
             drawW = usableWidth;
             drawH = usableWidth / imgRatio;
           }
-          x = marginMm + (usableWidth - drawW) / 2;
-          y = marginMm + (usableHeight - drawH) / 2;
         }
+        
+        x = marginMm + (usableWidth - drawW) / 2;
+        y = marginMm + (usableHeight - drawH) / 2;
 
         const canvas = document.createElement('canvas');
         canvas.width = htmlImg.width;
@@ -185,18 +191,20 @@ export default function ImageToPdfConverter() {
     }
   };
 
+  if (!mounted) return null;
+
   const renderSettingsContent = () => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-1">
         <Settings2 className="h-4 w-4 text-primary" />
         <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Configuración</h2>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.paperSize}</Label>
           <Select value={paperSize} onValueChange={setPaperSize}>
-            <SelectTrigger className="font-bold border-2 h-9 text-xs">
+            <SelectTrigger className="font-bold border-2 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -210,7 +218,7 @@ export default function ImageToPdfConverter() {
         <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.orientation}</Label>
           <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
-            <SelectTrigger className="font-bold border-2 h-9 text-xs">
+            <SelectTrigger className="font-bold border-2 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -223,7 +231,7 @@ export default function ImageToPdfConverter() {
         <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.imageFit}</Label>
           <Select value={fitMode} onValueChange={(v: any) => setFitMode(v)}>
-            <SelectTrigger className="font-bold border-2 h-9 text-xs">
+            <SelectTrigger className="font-bold border-2 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -238,8 +246,8 @@ export default function ImageToPdfConverter() {
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.margins}</Label>
             <span className="text-[10px] font-black text-primary">{margin} cm</span>
           </div>
-          <div className="flex items-center gap-2 py-1">
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => setMargin(Math.max(0, margin - 0.5))}>
+          <div className="flex items-center gap-2 py-0.5">
+            <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg shrink-0" onClick={() => setMargin(Math.max(0, margin - 0.5))}>
               <X className="h-3 w-3 rotate-45" />
             </Button>
             <div className="flex-1 h-1 bg-slate-100 rounded-full relative overflow-hidden">
@@ -248,16 +256,16 @@ export default function ImageToPdfConverter() {
                 style={{ width: `${(margin / 5) * 100}%` }}
               />
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => setMargin(Math.min(5, margin + 0.5))}>
+            <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg shrink-0" onClick={() => setMargin(Math.min(5, margin + 0.5))}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </div>
 
-      <Separator className="my-1 opacity-50" />
+      <Separator className="my-0.5 opacity-50" />
 
-      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1">
+      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-0.5">
         <div className="flex justify-between items-center">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Resumen</span>
           <span className="text-[10px] font-black text-primary">#{images.length}</span>
@@ -268,13 +276,13 @@ export default function ImageToPdfConverter() {
         </div>
       </div>
 
-      <div className="pt-2 space-y-2">
+      <div className="pt-1 space-y-2">
         <Button 
-          className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95 text-xs"
+          className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95 text-xs"
           onClick={exportPdf}
           disabled={images.length === 0 || isExporting}
         >
-          {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           {isExporting ? t.generating : t.export}
         </Button>
         <Button 
@@ -322,12 +330,12 @@ export default function ImageToPdfConverter() {
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-        {/* Left Column - Pages Thumbnails (Miniaturized) */}
-        <aside className="hidden md:flex w-[64px] bg-white border-r border-border flex-col items-center py-4 gap-2 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
+        {/* Left Column - Pages Thumbnails */}
+        <aside className="hidden md:flex w-[80px] bg-white border-r border-border flex-col items-center py-4 gap-2 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
           {images.map((img, idx) => (
             <div 
               key={img.id} 
-              className="relative w-10 aspect-[3/4] border border-slate-200 rounded-sm overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer"
+              className="relative w-12 aspect-[3/4] border border-slate-200 rounded-sm overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer"
               title={img.name}
               onClick={() => {
                 document.getElementById(`page-${img.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -335,22 +343,22 @@ export default function ImageToPdfConverter() {
             >
               <img src={img.url} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors" />
-              <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[7px] font-black text-white px-0.5 min-w-[12px] text-center rounded-br-[2px] shadow-sm">
+              <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[8px] font-black text-white px-0.5 min-w-[14px] text-center rounded-br-[2px] shadow-sm">
                 {idx + 1}
               </div>
             </div>
           ))}
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 border border-dashed border-slate-300 rounded-sm flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400 shrink-0"
+            className="w-12 h-12 border border-dashed border-slate-300 rounded-sm flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400 shrink-0"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
           </button>
         </aside>
 
-        {/* Workspace - Center: Vertical Page List */}
+        {/* Workspace - Center: Responsive Grid */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50 scroll-smooth">
-          <div className="max-w-3xl mx-auto flex flex-col items-center gap-8 pb-20 lg:pb-8">
+          <div className="max-w-6xl mx-auto flex flex-col gap-8 pb-20 lg:pb-8">
             {images.length === 0 ? (
               <div 
                 onClick={() => fileInputRef.current?.click()}
@@ -371,78 +379,78 @@ export default function ImageToPdfConverter() {
                 />
               </div>
             ) : (
-              images.map((img, idx) => (
-                <div 
-                  key={img.id} 
-                  id={`page-${img.id}`}
-                  className="relative group w-full max-w-[480px] animate-fade-in"
-                >
-                  <div className="absolute -left-12 top-0 h-full flex flex-col gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button 
-                      size="icon" 
-                      variant="destructive" 
-                      className="h-8 w-8 rounded-lg shadow-lg" 
-                      onClick={() => removeImage(img.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      size="icon" 
-                      variant="secondary" 
-                      className="h-8 w-8 rounded-lg shadow-lg" 
-                      onClick={() => moveImage(idx, 'up')} 
-                      disabled={idx === 0}
-                    >
-                      <MoveUp className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      size="icon" 
-                      variant="secondary" 
-                      className="h-8 w-8 rounded-lg shadow-lg" 
-                      onClick={() => moveImage(idx, 'down')} 
-                      disabled={idx === images.length - 1}
-                    >
-                      <MoveDown className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Página {idx + 1}</span>
-                    <span className="text-[9px] font-bold text-slate-400 truncate max-w-[180px]">{img.name}</span>
-                  </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {images.map((img, idx) => (
                   <div 
-                    className="relative w-full bg-white shadow-[0_15px_40px_rgba(0,0,0,0.08)] rounded-sm overflow-hidden border border-slate-200"
-                    style={{ aspectRatio: `${aspectRatio}` }}
+                    key={img.id} 
+                    id={`page-${img.id}`}
+                    className="relative group w-full animate-fade-in"
                   >
+                    <div className="absolute -top-3 -right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <Button 
+                        size="icon" 
+                        variant="secondary" 
+                        className="h-7 w-7 rounded-lg shadow-lg" 
+                        onClick={() => moveImage(idx, 'up')} 
+                        disabled={idx === 0}
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="secondary" 
+                        className="h-7 w-7 rounded-lg shadow-lg" 
+                        onClick={() => moveImage(idx, 'down')} 
+                        disabled={idx === images.length - 1}
+                      >
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="destructive" 
+                        className="h-7 w-7 rounded-lg shadow-lg" 
+                        onClick={() => removeImage(img.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pág {idx + 1}</span>
+                      <span className="text-[9px] font-bold text-slate-400 truncate max-w-[120px]">{img.name}</span>
+                    </div>
+
                     <div 
-                      className="absolute inset-0 bg-white" 
-                      style={{ padding: `${margin}cm` }}
+                      className="relative w-full bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)] rounded-sm overflow-hidden border border-slate-200"
+                      style={{ aspectRatio: `${aspectRatio}` }}
                     >
-                      <img 
-                        src={img.url} 
-                        alt={img.name} 
-                        className={cn(
-                          "w-full h-full",
-                          fitMode === 'fit' ? 'object-contain' : 'object-cover'
-                        )} 
-                      />
+                      <div 
+                        className="absolute inset-0 bg-white" 
+                        style={{ padding: `${margin}cm` }}
+                      >
+                        <img 
+                          src={img.url} 
+                          alt={img.name} 
+                          className={cn(
+                            "w-full h-full",
+                            fitMode === 'fit' ? 'object-contain' : 'object-cover'
+                          )} 
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-            
-            {images.length > 0 && (
-              <Button 
-                variant="outline" 
-                className="w-full max-w-[480px] h-24 border-2 border-dashed border-primary/20 hover:border-primary/40 hover:bg-white text-primary/60 font-black gap-2 rounded-xl transition-all"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <PlusCircle className="h-5 w-5" />
-                <span className="uppercase tracking-widest text-xs">{t.addImages}</span>
-                <input type="file" ref={fileInputRef} multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
-              </Button>
+                ))}
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full aspect-square sm:aspect-auto sm:h-auto border-2 border-dashed border-primary/20 hover:border-primary/40 hover:bg-white text-primary/60 font-black gap-2 rounded-xl transition-all flex flex-col justify-center min-h-[200px]"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <PlusCircle className="h-6 w-6" />
+                  <span className="uppercase tracking-widest text-[10px]">{t.addImages}</span>
+                  <input type="file" ref={fileInputRef} multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
+                </Button>
+              </div>
             )}
           </div>
         </div>
