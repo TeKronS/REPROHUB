@@ -7,7 +7,6 @@ import Link from "next/link";
 import { 
   ChevronLeft, 
   FileType, 
-  FileDown, 
   Loader2, 
   Upload, 
   X,
@@ -21,10 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import logo from "@/app/icono.png";
-import { Document, Packer, Paragraph, TextRun } from "docx";
-import { saveAs } from "file-saver";
 
-// Usamos la versión 2.16.105 que es la más compatible con todos los navegadores y entornos
+// Versión ultra-compatible de PDF.js (v2.x no usa bloques estáticos de clase que causan el error 'super')
 const PDFJS_VERSION = "2.16.105";
 const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
 const PDFJS_WORKER_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
@@ -44,7 +41,7 @@ export default function PdfToWordConverter() {
   useEffect(() => {
     setMounted(true);
     
-    // Función para inyectar los scripts solo en el cliente
+    // Inyectamos el script de PDF.js dinámicamente para que Turbopack no lo analice
     const loadPdfJs = () => {
       if (typeof window === "undefined") return;
       if ((window as any).pdfjsLib) {
@@ -83,19 +80,22 @@ export default function PdfToWordConverter() {
 
   const convertToWord = async () => {
     const pdfjsLib = (window as any).pdfjsLib;
-    
     if (!pdfFile || !pdfjsLib) return;
     
     setIsConverting(true);
     setProgress(5);
 
     try {
+      // Importación dinámica de docx y file-saver para evitar el error de 'super' en el bundle principal
+      const { Document, Packer, Paragraph, TextRun } = await import("docx");
+      const { saveAs } = await import("file-saver");
+
       const arrayBuffer = await pdfFile.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       
       const numPages = pdf.numPages;
-      const docParagraphs: Paragraph[] = [];
+      const docParagraphs: any[] = [];
 
       for (let i = 1; i <= numPages; i++) {
         const page = await pdf.getPage(i);
@@ -105,7 +105,7 @@ export default function PdfToWordConverter() {
         let currentLine = "";
 
         textContent.items.forEach((item: any) => {
-          // Lógica de detección de líneas basada en posición vertical
+          // Lógica de detección de líneas simple basada en coordenadas Y
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
             if (currentLine.trim()) {
               docParagraphs.push(new Paragraph({
@@ -125,6 +125,7 @@ export default function PdfToWordConverter() {
           }));
         }
 
+        // Añadimos salto de página si no es la última
         if (i < numPages) {
           docParagraphs.push(new Paragraph({
             children: [new TextRun({ text: "", break: 1 })],
@@ -150,10 +151,11 @@ export default function PdfToWordConverter() {
         description: "El archivo Word se ha generado correctamente."
       });
     } catch (error) {
+      console.error("Conversion error:", error);
       toast({
         variant: "destructive",
         title: "Error de procesamiento",
-        description: "No se pudo leer el PDF de forma local."
+        description: "No se pudo realizar la conversión local."
       });
     } finally {
       setIsConverting(false);
@@ -200,7 +202,7 @@ export default function PdfToWordConverter() {
             {!libReady ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-[10px]">Preparando motor local...</p>
+                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-[10px]">Iniciando motor local...</p>
               </div>
             ) : !pdfFile ? (
               <div 
@@ -249,7 +251,7 @@ export default function PdfToWordConverter() {
                 {isConverting && (
                   <div className="space-y-3">
                     <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
-                      <span>Procesando en tu navegador...</span>
+                      <span>Extrayendo contenido...</span>
                       <span>{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-3 bg-primary/10 rounded-full" />
@@ -267,21 +269,21 @@ export default function PdfToWordConverter() {
                     ) : (
                       <FileCheck className="h-6 w-6 mr-2" />
                     )}
-                    {isConverting ? "Trabajando..." : t.downloadDocx}
+                    {isConverting ? "Procesando..." : t.downloadDocx}
                   </Button>
                 </div>
               </div>
             )}
           </Card>
 
-          <div className="flex items-center gap-4 p-5 bg-orange-50/50 border border-orange-100 rounded-3xl shadow-sm">
-            <div className="p-2 bg-orange-100 rounded-full">
-              <AlertCircle className="h-5 w-5 text-orange-600 shrink-0" />
+          <div className="flex items-center gap-4 p-5 bg-emerald-50/50 border border-emerald-100 rounded-3xl shadow-sm">
+            <div className="p-2 bg-emerald-100 rounded-full">
+              <FileCheck className="h-5 w-5 text-emerald-600 shrink-0" />
             </div>
             <div className="space-y-0.5">
-              <p className="text-[11px] font-black text-orange-800 uppercase tracking-tighter">Privacidad Total (Local)</p>
-              <p className="text-[10px] font-bold text-orange-700/80 leading-tight">
-                La conversión ocurre 100% en tu navegador. Tus archivos nunca salen de tu dispositivo.
+              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Procesamiento Local Seguro</p>
+              <p className="text-[10px] font-bold text-emerald-700/80 leading-tight">
+                Tus documentos PDF se analizan exclusivamente en tu navegador. Privacidad garantizada al 100%.
               </p>
             </div>
           </div>
