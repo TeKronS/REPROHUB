@@ -24,9 +24,6 @@ import logo from "@/app/icono.png";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
 
-// We import pdfjs dynamically to avoid SSR issues
-let pdfjsLib: any = null;
-
 export default function PdfToWordConverter() {
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Language>('es');
@@ -37,14 +34,25 @@ export default function PdfToWordConverter() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [pdfjs, setPdfjs] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Initialize PDF.js worker
-    import("pdfjs-dist").then((pdfjs) => {
-      pdfjsLib = pdfjs;
-      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-    });
+    
+    // Carga dinámica de PDF.js solo en el cliente
+    const initPdfJs = async () => {
+      try {
+        const pdfjsModule = await import("pdfjs-dist");
+        // @ts-ignore
+        const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.mjs");
+        pdfjsModule.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+        setPdfjs(pdfjsModule);
+      } catch (error) {
+        console.error("Error loading PDF.js:", error);
+      }
+    };
+
+    initPdfJs();
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,13 +69,21 @@ export default function PdfToWordConverter() {
   };
 
   const convertToWord = async () => {
-    if (!pdfFile || !pdfjsLib) return;
+    if (!pdfFile || !pdfjs) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "El motor de conversión aún se está cargando. Por favor, espera un momento."
+      });
+      return;
+    }
+    
     setIsConverting(true);
     setProgress(10);
 
     try {
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       
       const numPages = pdf.numPages;
@@ -77,11 +93,11 @@ export default function PdfToWordConverter() {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
-        // Group items by transform (basic heuristic for lines)
         let lastY = -1;
         let currentLine = "";
 
         textContent.items.forEach((item: any) => {
+          // Heurística básica para detectar nuevas líneas por cambio de posición Y
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
             if (currentLine.trim()) {
               paragraphs.push(new Paragraph({
@@ -95,14 +111,12 @@ export default function PdfToWordConverter() {
           lastY = item.transform[5];
         });
 
-        // Add last line of the page
         if (currentLine.trim()) {
           paragraphs.push(new Paragraph({
             children: [new TextRun(currentLine)],
           }));
         }
 
-        // Add a page break if not the last page
         if (i < numPages) {
           paragraphs.push(new Paragraph({
             children: [new TextRun({ text: "", break: 1 })],
@@ -234,7 +248,7 @@ export default function PdfToWordConverter() {
                   <Button 
                     className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-2xl shadow-primary/20 text-lg uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
                     onClick={convertToWord}
-                    disabled={isConverting}
+                    disabled={isConverting || !pdfjs}
                   >
                     {isConverting ? (
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
