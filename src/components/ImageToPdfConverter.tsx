@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useRef, useMemo } from "react";
@@ -37,7 +36,7 @@ import {
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { jsPDF } from "jsPDF";
+import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
@@ -187,17 +186,17 @@ export default function ImageToPdfConverter() {
   };
 
   const renderSettingsContent = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-2">
         <Settings2 className="h-4 w-4 text-primary" />
         <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Configuración</h2>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
+      <div className="space-y-3">
+        <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.paperSize}</Label>
           <Select value={paperSize} onValueChange={setPaperSize}>
-            <SelectTrigger className="font-bold border-2">
+            <SelectTrigger className="font-bold border-2 h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -208,10 +207,10 @@ export default function ImageToPdfConverter() {
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.orientation}</Label>
           <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
-            <SelectTrigger className="font-bold border-2">
+            <SelectTrigger className="font-bold border-2 h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -221,10 +220,10 @@ export default function ImageToPdfConverter() {
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.imageFit}</Label>
           <Select value={fitMode} onValueChange={(v: any) => setFitMode(v)}>
-            <SelectTrigger className="font-bold border-2">
+            <SelectTrigger className="font-bold border-2 h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -239,8 +238,8 @@ export default function ImageToPdfConverter() {
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.margins}</Label>
             <span className="text-xs font-black text-primary">{margin} cm</span>
           </div>
-          <div className="flex items-center gap-4 py-2">
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMargin(Math.max(0, margin - 0.5))}>
+          <div className="flex items-center gap-2 py-1">
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => setMargin(Math.max(0, margin - 0.5))}>
               <X className="h-3 w-3 rotate-45" />
             </Button>
             <div className="flex-1 h-1 bg-slate-100 rounded-full relative overflow-hidden">
@@ -249,16 +248,16 @@ export default function ImageToPdfConverter() {
                 style={{ width: `${(margin / 5) * 100}%` }}
               />
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setMargin(Math.min(5, margin + 0.5))}>
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shrink-0" onClick={() => setMargin(Math.min(5, margin + 0.5))}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </div>
 
-      <Separator />
+      <Separator className="my-2" />
 
-      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1">
         <div className="flex justify-between items-center">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resumen</span>
           <span className="text-xs font-black text-primary">#{images.length}</span>
@@ -269,9 +268,9 @@ export default function ImageToPdfConverter() {
         </div>
       </div>
 
-      <div className="pt-2 space-y-3">
+      <div className="pt-2 space-y-2">
         <Button 
-          className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95"
+          className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95"
           onClick={exportPdf}
           disabled={images.length === 0 || isExporting}
         >
@@ -280,7 +279,7 @@ export default function ImageToPdfConverter() {
         </Button>
         <Button 
           variant="ghost" 
-          className="w-full text-slate-400 hover:text-destructive transition-colors font-bold text-xs"
+          className="w-full text-slate-400 hover:text-destructive transition-colors font-bold text-[10px]"
           onClick={() => setImages([])}
           disabled={images.length === 0}
         >
