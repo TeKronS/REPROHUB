@@ -39,16 +39,19 @@ export default function PdfToWordConverter() {
   useEffect(() => {
     setMounted(true);
     
-    // Carga dinámica de PDF.js solo en el cliente
     const initPdfJs = async () => {
       try {
-        const pdfjsModule = await import("pdfjs-dist");
-        // @ts-ignore
-        const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.mjs");
-        pdfjsModule.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+        // Utilizamos la versión 'legacy' para evitar errores de sintaxis moderna (como el error 'super')
+        // en entornos de empaquetado como Turbopack o Next.js
+        const pdfjsModule = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        
+        // Configuramos el worker utilizando un CDN para garantizar máxima compatibilidad
+        // y evitar problemas de carga de archivos locales pesados
+        pdfjsModule.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsModule.version}/pdf.worker.min.mjs`;
+        
         setPdfjs(pdfjsModule);
       } catch (error) {
-        console.error("Error loading PDF.js:", error);
+        console.error("Error al cargar el motor de PDF.js:", error);
       }
     };
 
@@ -73,7 +76,7 @@ export default function PdfToWordConverter() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "El motor de conversión aún se está cargando. Por favor, espera un momento."
+        description: "El motor de conversión se está preparando. Por favor, intenta de nuevo en un segundo."
       });
       return;
     }
@@ -96,8 +99,9 @@ export default function PdfToWordConverter() {
         let lastY = -1;
         let currentLine = "";
 
+        // @ts-ignore - items de PDF.js pueden variar según versión
         textContent.items.forEach((item: any) => {
-          // Heurística básica para detectar nuevas líneas por cambio de posición Y
+          // Heurística para detectar saltos de línea basados en la posición vertical (Y)
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
             if (currentLine.trim()) {
               paragraphs.push(new Paragraph({
@@ -117,6 +121,7 @@ export default function PdfToWordConverter() {
           }));
         }
 
+        // Espacio entre páginas
         if (i < numPages) {
           paragraphs.push(new Paragraph({
             children: [new TextRun({ text: "", break: 1 })],
@@ -138,15 +143,15 @@ export default function PdfToWordConverter() {
       
       setProgress(100);
       toast({
-        title: "Conversión Exitosa",
-        description: "El archivo Word ha sido generado."
+        title: "Conversión Finalizada",
+        description: "El archivo Word ha sido generado correctamente."
       });
     } catch (error) {
-      console.error(error);
+      console.error("Error durante la conversión:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Ocurrió un error al convertir el PDF."
+        title: "Error de Conversión",
+        description: "No se pudo procesar este archivo PDF. Puede que esté protegido o dañado."
       });
     } finally {
       setIsConverting(false);
@@ -255,7 +260,7 @@ export default function PdfToWordConverter() {
                     ) : (
                       <FileCheck className="h-6 w-6 mr-2" />
                     )}
-                    {isConverting ? "..." : t.downloadDocx}
+                    {isConverting ? "Procesando..." : t.downloadDocx}
                   </Button>
                 </div>
               </div>
@@ -265,7 +270,7 @@ export default function PdfToWordConverter() {
           <div className="flex items-center gap-4 p-4 bg-orange-50 border border-orange-100 rounded-2xl">
             <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
             <p className="text-[11px] font-bold text-orange-700 leading-tight">
-              Nota: La conversión extrae el texto manteniendo párrafos básicos. Formatos complejos como tablas o imágenes anidadas podrían no preservarse perfectamente en esta versión.
+              Nota: La conversión extrae el texto manteniendo párrafos básicos. Formatos complejos como tablas, formularios o imágenes anidadas podrían no preservarse perfectamente en esta versión.
             </p>
           </div>
         </div>
