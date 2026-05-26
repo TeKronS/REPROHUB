@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -10,8 +9,7 @@ import {
   Loader2, 
   Upload, 
   X,
-  FileCheck,
-  ImageIcon
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,7 +19,6 @@ import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import logo from "@/app/icono.png";
 
-// Versiones estables para uso vía CDN (v2.x es la más compatible con Turbopack)
 const PDFJS_VERSION = "2.16.105";
 const DOCX_VERSION = "7.1.0";
 const FILE_SAVER_VERSION = "2.0.5";
@@ -77,7 +74,7 @@ export default function PdfToWordConverter() {
         toast({
           variant: "destructive",
           title: "Error de inicialización",
-          description: "No se pudieron cargar los componentes locales."
+          description: "No se pudieron cargar los componentes locales de procesamiento."
         });
       }
     };
@@ -99,11 +96,14 @@ export default function PdfToWordConverter() {
     const docx = (window as any).docx;
     const saveAs = (window as any).saveAs;
 
-    if (!pdfjsLib || !docx || !saveAs) return;
+    if (!pdfjsLib || !docx || !saveAs) {
+      toast({ variant: "destructive", title: "Error", description: "Librerías de procesamiento no listas." });
+      return;
+    }
 
     setIsConverting(true);
     setProgress(5);
-    setStatusText("Analizando estructura...");
+    setStatusText("Analizando estructura del documento...");
 
     try {
       const { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun } = docx;
@@ -114,12 +114,11 @@ export default function PdfToWordConverter() {
       const docChildren: any[] = [];
 
       for (let i = 1; i <= numPages; i++) {
-        setStatusText(`Procesando página ${i}...`);
+        setStatusText(`Procesando página ${i} de ${numPages}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.0 });
         const pageWidth = viewport.width;
 
-        // --- EXTRACCIÓN DE IMÁGENES ---
         const operatorList = await page.getOperatorList();
         for (let j = 0; j < operatorList.fnArray.length; j++) {
           const fn = operatorList.fnArray[j];
@@ -141,7 +140,10 @@ export default function PdfToWordConverter() {
                   docChildren.push(new Paragraph({
                     children: [new ImageRun({
                       data: canvas.toDataURL('image/png'),
-                      transformation: { width: Math.min(canvas.width / 4, pageWidth - 100), height: canvas.height / 4 }
+                      transformation: { 
+                        width: Math.min(canvas.width / 3, pageWidth - 100), 
+                        height: canvas.height / 3 
+                      }
                     })],
                     alignment: AlignmentType.CENTER,
                     spacing: { after: 200 }
@@ -152,7 +154,6 @@ export default function PdfToWordConverter() {
           }
         }
 
-        // --- EXTRACCIÓN DE TEXTO CON ATRIBUTOS ---
         const textContent = await page.getTextContent();
         const items = textContent.items as any[];
         const styles = textContent.styles as any;
@@ -172,56 +173,67 @@ export default function PdfToWordConverter() {
           
           let minX = Infinity;
           let maxX = -Infinity;
-          let fontSize = 11;
+          let maxFontSize = 11;
           const textRuns: any[] = [];
 
           line.forEach(item => {
             const fontStyle = styles[item.fontName];
-            const isBold = fontStyle?.fontFamily?.toLowerCase().includes('bold') || 
-                           item.fontName?.toLowerCase().includes('bold');
+            
+            const fontStack = fontStyle?.fontFamily || "Arial";
+            const cleanFont = fontStack.split(',')[0].replace(/['"]/g, '').trim();
+            
+            const fontNameLower = (item.fontName || "").toLowerCase();
+            const familyNameLower = cleanFont.toLowerCase();
+            const isBold = fontNameLower.includes('bold') || 
+                           familyNameLower.includes('bold') || 
+                           fontNameLower.includes('-bd') ||
+                           fontNameLower.includes('_bold');
             
             minX = Math.min(minX, item.transform[4]);
             maxX = Math.max(maxX, item.transform[4] + item.width);
-            fontSize = Math.max(fontSize, Math.abs(item.transform[0]));
+            const fontSize = Math.abs(item.transform[0]);
+            maxFontSize = Math.max(maxFontSize, fontSize);
 
             textRuns.push(new TextRun({
               text: item.str,
               size: Math.round(fontSize * 2),
               bold: isBold,
-              font: fontStyle?.fontFamily?.split(',')[0] || "Calibri"
+              font: cleanFont || "Arial"
             }));
           });
 
-          // DETECCIÓN DE ENTERS (SALTOS VERTICALES)
           if (lastLineY !== -1) {
             const verticalGap = lastLineY - line[0].transform[5];
-            const threshold = fontSize * 1.6;
+            const threshold = maxFontSize * 1.5; 
             if (verticalGap > threshold) {
-              const numEnters = Math.max(0, Math.floor(verticalGap / (fontSize * 1.5)) - 1);
+              const numEnters = Math.max(1, Math.floor(verticalGap / (maxFontSize * 1.6)) - 1);
               for (let e = 0; e < numEnters; e++) {
                 docChildren.push(new Paragraph({ children: [new TextRun({ text: "" })] }));
               }
             }
           }
 
-          // DETECCIÓN DE ALINEACIÓN
           const lineCenter = (minX + maxX) / 2;
           const pageCenter = pageWidth / 2;
           let alignment = AlignmentType.LEFT;
-          if (Math.abs(lineCenter - pageCenter) < 40) alignment = AlignmentType.CENTER;
-          else if (maxX > pageWidth - 100 && minX > pageWidth / 2) alignment = AlignmentType.RIGHT;
+          
+          if (Math.abs(lineCenter - pageCenter) < 45) {
+            alignment = AlignmentType.CENTER;
+          } else if (maxX > pageWidth - 100 && minX > pageWidth / 2) {
+            alignment = AlignmentType.RIGHT;
+          }
 
           docChildren.push(new Paragraph({
             children: textRuns,
             alignment: alignment,
-            spacing: { after: 100 }
+            spacing: { after: 80 }
           }));
 
           lastLineY = line[0].transform[5];
         };
 
         items.forEach(item => {
-          if (currentY !== -1 && Math.abs(item.transform[5] - currentY) > 7) {
+          if (currentY !== -1 && Math.abs(item.transform[5] - currentY) > 6) {
             processLine(lineItems);
             lineItems = [item];
           } else {
@@ -241,8 +253,13 @@ export default function PdfToWordConverter() {
 
       const doc = new Document({
         creator: "MultiPrintTools",
+        title: pdfFile.name,
         sections: [{
-          properties: { page: { margin: { top: 1200, right: 1200, bottom: 1200, left: 1200 } } },
+          properties: { 
+            page: { 
+              margin: { top: 1100, right: 1100, bottom: 1100, left: 1100 } 
+            } 
+          },
           children: docChildren,
         }],
       });
@@ -250,9 +267,10 @@ export default function PdfToWordConverter() {
       const blob = await Packer.toBlob(doc);
       saveAs(blob, pdfFile.name.replace(/\.[^/.]+$/, "") + " (Convertido).docx");
       setProgress(100);
-      toast({ title: "Convertido", description: "El archivo Word se ha descargado." });
+      toast({ title: "¡Conversión Exitosa!", description: "El documento editable se ha descargado correctamente." });
     } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo procesar el PDF." });
+      console.error("Error en conversión:", error);
+      toast({ variant: "destructive", title: "Error de conversión", description: "Ocurrió un fallo al reconstruir el documento." });
     } finally {
       setIsConverting(false);
       setTimeout(() => setProgress(0), 3000);
@@ -285,10 +303,10 @@ export default function PdfToWordConverter() {
         <div className="w-full max-w-2xl space-y-8 animate-fade-in">
           <div className="text-center space-y-3">
             <h2 className="text-3xl sm:text-4xl font-headline font-black tracking-tighter text-slate-900 uppercase">
-              RECONSTRUCCIÓN INTELIGENTE
+              RECONSTRUCCIÓN FIEL
             </h2>
             <p className="text-slate-500 font-medium max-w-md mx-auto">
-              Analizamos fuentes, negritas, imágenes y espaciado original para un documento editable perfecto.
+              Analizamos fuentes originales (Times, Arial, etc), negritas e imágenes para un documento editable perfecto.
             </p>
           </div>
 
@@ -296,16 +314,16 @@ export default function PdfToWordConverter() {
             {!libsReady ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                <p className="font-bold text-primary uppercase tracking-widest text-[10px]">Iniciando motores locales...</p>
+                <p className="font-bold text-primary uppercase tracking-widest text-[10px]">Cargando motores locales...</p>
               </div>
             ) : !pdfFile ? (
               <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center space-y-6 cursor-pointer">
                 <div className="p-8 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-300">
-                  <Upload className="h-16 w-16 text-primary" />
+                  <FileType className="h-16 w-16 text-primary" />
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{t.dropPdf}</h3>
-                  <p className="text-slate-500 font-bold text-sm">Privacidad 100% garantizada. Sin servidores.</p>
+                  <p className="text-slate-500 font-bold text-sm">Privacidad 100%. Los archivos no salen de tu PC.</p>
                 </div>
                 <Button className="bg-primary hover:bg-primary/90 text-white font-black px-8 py-6 rounded-2xl text-lg uppercase tracking-widest shadow-xl">
                   {t.selectPdf}
@@ -349,7 +367,7 @@ export default function PdfToWordConverter() {
                   disabled={isConverting}
                 >
                   {isConverting ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : <FileCheck className="h-6 w-6 mr-2" />}
-                  {isConverting ? "Reconstruyendo..." : "Convertir y Descargar"}
+                  {isConverting ? "Procesando..." : "Convertir y Descargar"}
                 </Button>
               </div>
             )}
