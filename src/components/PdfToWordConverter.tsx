@@ -41,10 +41,12 @@ export default function PdfToWordConverter() {
   useEffect(() => {
     setMounted(true);
     
-    // Inyectamos el script de PDF.js dinámicamente para que Turbopack no lo analice
     const loadPdfJs = () => {
+      console.log("Iniciando carga de PDF.js v" + PDFJS_VERSION);
       if (typeof window === "undefined") return;
+      
       if ((window as any).pdfjsLib) {
+        console.log("PDF.js ya estaba cargado en el objeto window.");
         setLibReady(true);
         return;
       }
@@ -53,11 +55,18 @@ export default function PdfToWordConverter() {
       script.src = PDFJS_CDN;
       script.async = true;
       script.onload = () => {
+        console.log("Script principal de PDF.js cargado correctamente.");
         const pdfjsLib = (window as any).pdfjsLib;
         if (pdfjsLib) {
           pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+          console.log("Worker de PDF.js configurado vía CDN.");
           setLibReady(true);
+        } else {
+          console.error("PDF.js cargado pero pdfjsLib no encontrado en window.");
         }
+      };
+      script.onerror = (err) => {
+        console.error("Error cargando el script de PDF.js desde el CDN:", err);
       };
       document.head.appendChild(script);
     };
@@ -68,8 +77,10 @@ export default function PdfToWordConverter() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === "application/pdf") {
+      console.log("Archivo PDF seleccionado:", file.name, "(" + file.size + " bytes)");
       setPdfFile(file);
     } else if (file) {
+      console.warn("Intento de carga de archivo no PDF:", file.type);
       toast({
         variant: "destructive",
         title: "Formato no válido",
@@ -79,25 +90,63 @@ export default function PdfToWordConverter() {
   };
 
   const convertToWord = async () => {
+    console.log("Iniciando proceso de conversión PDF -> Word...");
     const pdfjsLib = (window as any).pdfjsLib;
-    if (!pdfFile || !pdfjsLib) return;
+    
+    if (!pdfFile) {
+      console.error("No hay archivo PDF seleccionado.");
+      return;
+    }
+
+    if (!pdfjsLib) {
+      console.error("Librería pdfjsLib no disponible en el momento de la conversión.");
+      toast({
+        variant: "destructive",
+        title: "Error de motor",
+        description: "El motor de PDF no está listo. Recarga la página."
+      });
+      return;
+    }
     
     setIsConverting(true);
     setProgress(5);
 
     try {
-      // Importación dinámica de docx y file-saver para evitar el error de 'super' en el bundle principal
-      const { Document, Packer, Paragraph, TextRun } = await import("docx");
-      const { saveAs } = await import("file-saver");
+      console.log("Paso 1: Importación dinámica de librerías secundarias...");
+      
+      // Intentamos importar docx de forma aislada
+      console.log("Importando 'docx'...");
+      const docx = await import("docx").catch(err => {
+        console.error("Error fatal importando 'docx':", err);
+        throw err;
+      });
+      console.log("'docx' importado con éxito.");
 
+      // Intentamos importar file-saver de forma aislada
+      console.log("Importando 'file-saver'...");
+      const fileSaver = await import("file-saver").catch(err => {
+        console.error("Error fatal importando 'file-saver':", err);
+        throw err;
+      });
+      console.log("'file-saver' importado con éxito.");
+
+      const { Document, Packer, Paragraph, TextRun } = docx;
+      const { saveAs } = fileSaver;
+
+      console.log("Paso 2: Leyendo ArrayBuffer del archivo...");
       const arrayBuffer = await pdfFile.arrayBuffer();
+      
+      console.log("Paso 3: Cargando documento PDF con PDF.js...");
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       
       const numPages = pdf.numPages;
+      console.log("Documento PDF cargado. Total de páginas:", numPages);
+      
       const docParagraphs: any[] = [];
 
       for (let i = 1; i <= numPages; i++) {
+        console.log("Procesando página " + i + " de " + numPages + "...");
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
@@ -105,7 +154,7 @@ export default function PdfToWordConverter() {
         let currentLine = "";
 
         textContent.items.forEach((item: any) => {
-          // Lógica de detección de líneas simple basada en coordenadas Y
+          // Lógica de detección de líneas basada en coordenadas Y
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
             if (currentLine.trim()) {
               docParagraphs.push(new Paragraph({
@@ -125,16 +174,16 @@ export default function PdfToWordConverter() {
           }));
         }
 
-        // Añadimos salto de página si no es la última
         if (i < numPages) {
           docParagraphs.push(new Paragraph({
             children: [new TextRun({ text: "", break: 1 })],
           }));
         }
 
-        setProgress(10 + (Math.round((i / numPages) * 85)));
+        setProgress(10 + (Math.round((i / numPages) * 80)));
       }
 
+      console.log("Paso 4: Generando estructura final del archivo Word...");
       const doc = new Document({
         sections: [{
           properties: {},
@@ -142,24 +191,27 @@ export default function PdfToWordConverter() {
         }],
       });
 
+      console.log("Paso 5: Empaquetando y disparando descarga...");
       const buffer = await Packer.toBlob(doc);
       saveAs(buffer, pdfFile.name.replace(".pdf", ".docx"));
       
+      console.log("Conversión completada con éxito.");
       setProgress(100);
       toast({
         title: "Conversión terminada",
         description: "El archivo Word se ha generado correctamente."
       });
-    } catch (error) {
-      console.error("Conversion error:", error);
+    } catch (error: any) {
+      console.error("ERROR CRÍTICO DURANTE LA CONVERSIÓN:", error);
+      console.error("Detalle del error:", error.message, error.stack);
       toast({
         variant: "destructive",
         title: "Error de procesamiento",
-        description: "No se pudo realizar la conversión local."
+        description: "Error: " + (error.message || "Error desconocido en el navegador.")
       });
     } finally {
       setIsConverting(false);
-      setTimeout(() => setProgress(0), 1000);
+      setTimeout(() => setProgress(0), 2000);
     }
   };
 
@@ -202,7 +254,7 @@ export default function PdfToWordConverter() {
             {!libReady ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-[10px]">Iniciando motor local...</p>
+                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-[10px]">Cargando motor local compatible...</p>
               </div>
             ) : !pdfFile ? (
               <div 
@@ -241,7 +293,10 @@ export default function PdfToWordConverter() {
                     variant="ghost" 
                     size="icon" 
                     className="rounded-full text-slate-400 hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setPdfFile(null)}
+                    onClick={() => {
+                      console.log("Removiendo archivo actual...");
+                      setPdfFile(null);
+                    }}
                     disabled={isConverting}
                   >
                     <X className="h-6 w-6" />
@@ -251,7 +306,7 @@ export default function PdfToWordConverter() {
                 {isConverting && (
                   <div className="space-y-3">
                     <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
-                      <span>Extrayendo contenido...</span>
+                      <span>Procesando PDF localmente...</span>
                       <span>{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-3 bg-primary/10 rounded-full" />
@@ -281,9 +336,9 @@ export default function PdfToWordConverter() {
               <FileCheck className="h-5 w-5 text-emerald-600 shrink-0" />
             </div>
             <div className="space-y-0.5">
-              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Procesamiento Local Seguro</p>
+              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Procesamiento Privado Local</p>
               <p className="text-[10px] font-bold text-emerald-700/80 leading-tight">
-                Tus documentos PDF se analizan exclusivamente en tu navegador. Privacidad garantizada al 100%.
+                Utilizamos el motor de tu navegador para la conversión. Abre la consola del desarrollador (F12) para ver el progreso detallado.
               </p>
             </div>
           </div>
