@@ -77,7 +77,6 @@ export default function MuralisEditor() {
   const [targetWidth, setTargetWidth] = useState<string>('0');
   const [targetHeight, setTargetHeight] = useState<string>('0');
 
-  // Mobile draft states
   const [draftRows, setDraftRows] = useState(2);
   const [draftCols, setDraftCols] = useState(2);
   const [draftOverlap, setDraftOverlap] = useState(1.5);
@@ -438,7 +437,6 @@ export default function MuralisEditor() {
           if (sw > 0 && sh > 0) {
             canvas.width = Math.max(1, sw);
             canvas.height = Math.max(1, sh);
-            // Ensure white background for transparent images
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
@@ -519,7 +517,7 @@ export default function MuralisEditor() {
       {!isMobile && (
         <div className="flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
-            <Settings2 className="h-3 w-3" /> {t.gridSettings}
+            <Settings2 className="h-3 v-3" /> {t.gridSettings}
           </h2>
         </div>
       )}
@@ -625,7 +623,6 @@ export default function MuralisEditor() {
                 setRows(opt.rows); setCols(opt.cols); setOrientation(opt.orientation);
               }
             }}>
-              <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectContent>
                 {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}

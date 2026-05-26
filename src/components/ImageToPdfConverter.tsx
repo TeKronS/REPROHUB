@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
@@ -14,8 +13,7 @@ import {
   X,
   PlusCircle,
   ArrowLeft,
-  ArrowRight,
-  Copy
+  ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -87,7 +85,6 @@ export default function ImageToPdfConverter() {
       : paper.height / paper.width;
   }, [paper, orientation]);
 
-  // Expand images based on their quantity
   const expandedImagesList = useMemo(() => {
     const list: ImageData[] = [];
     images.forEach(img => {
@@ -413,10 +410,10 @@ export default function ImageToPdfConverter() {
           </button>
         </aside>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50 scroll-smooth">
-          <div className="max-w-6xl mx-auto flex flex-col gap-8 pb-20 lg:pb-8 h-full min-h-full">
+        <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-8 bg-slate-100/50 scroll-smooth">
+          <div className="max-w-6xl mx-auto h-full">
             {images.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center h-full w-full">
+              <div className="flex items-center justify-center h-full min-h-full w-full">
                 <div 
                   onClick={() => fileInputRef.current?.click()}
                   className="flex flex-col items-center justify-center min-h-[150px] h-full w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
@@ -437,10 +434,11 @@ export default function ImageToPdfConverter() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,200px))] gap-8 justify-center sm:justify-start">
+              <div className="flex flex-wrap gap-8 justify-center lg:justify-start pb-24">
                 {images.map((img, idx) => (
                   <div 
                     key={img.id} 
+                    id={`page-${img.id}`}
                     className="relative group w-full max-w-[200px] animate-fade-in"
                   >
                     <div className="absolute -top-3 -right-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -567,7 +565,11 @@ export default function ImageToPdfConverter() {
             <Button 
               size="icon" 
               className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
             >
               <Settings2 className="h-6 w-6" />
             </Button>
