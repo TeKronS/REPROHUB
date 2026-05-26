@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -54,7 +55,7 @@ export default function PdfToWordConverter() {
         script.async = true;
         script.onload = () => resolve(true);
         script.onerror = (e) => {
-          console.error(`Fallo al cargar motor externo: ${url}`, e);
+          console.error(`Error cargando motor: ${url}`, e);
           reject(e);
         };
         document.head.appendChild(script);
@@ -103,7 +104,7 @@ export default function PdfToWordConverter() {
 
     setIsConverting(true);
     setProgress(5);
-    setStatusText("Analizando estructura del documento...");
+    setStatusText("Analizando estructura...");
 
     try {
       const { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun } = docx;
@@ -114,7 +115,7 @@ export default function PdfToWordConverter() {
       const docChildren: any[] = [];
 
       for (let i = 1; i <= numPages; i++) {
-        setStatusText(`Procesando página ${i} de ${numPages}...`);
+        setStatusText(`Página ${i} de ${numPages}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.0 });
         const pageWidth = viewport.width;
@@ -179,15 +180,32 @@ export default function PdfToWordConverter() {
           line.forEach(item => {
             const fontStyle = styles[item.fontName];
             
+            // Detección robusta de fuente
             const fontStack = fontStyle?.fontFamily || "Arial";
-            const cleanFont = fontStack.split(',')[0].replace(/['"]/g, '').trim();
+            let cleanFont = fontStack.split(',')[0].replace(/['"]/g, '').trim();
             
+            // Normalización de nombres de fuentes comunes
+            const lowerFont = cleanFont.toLowerCase();
+            if (lowerFont.includes('times')) cleanFont = "Times New Roman";
+            else if (lowerFont.includes('arial')) cleanFont = "Arial";
+            else if (lowerFont.includes('calibri')) cleanFont = "Calibri";
+            else if (lowerFont.includes('courier')) cleanFont = "Courier New";
+            else if (lowerFont.includes('georgia')) cleanFont = "Georgia";
+            else if (lowerFont.includes('tahoma')) cleanFont = "Tahoma";
+            else if (lowerFont.includes('verdana')) cleanFont = "Verdana";
+
+            // Detección agresiva de Negrita
             const fontNameLower = (item.fontName || "").toLowerCase();
             const familyNameLower = cleanFont.toLowerCase();
             const isBold = fontNameLower.includes('bold') || 
-                           familyNameLower.includes('bold') || 
+                           fontNameLower.includes('black') ||
+                           fontNameLower.includes('heavy') ||
                            fontNameLower.includes('-bd') ||
-                           fontNameLower.includes('_bold');
+                           fontNameLower.includes('_bold') ||
+                           fontNameLower.includes('w7') ||
+                           fontNameLower.includes('w8') ||
+                           fontNameLower.includes('w9') ||
+                           familyNameLower.includes('bold');
             
             minX = Math.min(minX, item.transform[4]);
             maxX = Math.max(maxX, item.transform[4] + item.width);
@@ -198,10 +216,11 @@ export default function PdfToWordConverter() {
               text: item.str,
               size: Math.round(fontSize * 2),
               bold: isBold,
-              font: cleanFont || "Arial"
+              font: cleanFont
             }));
           });
 
+          // Detección de saltos de línea físicos (Enters)
           if (lastLineY !== -1) {
             const verticalGap = lastLineY - line[0].transform[5];
             const threshold = maxFontSize * 1.5; 
@@ -213,6 +232,7 @@ export default function PdfToWordConverter() {
             }
           }
 
+          // Detección de alineación
           const lineCenter = (minX + maxX) / 2;
           const pageCenter = pageWidth / 2;
           let alignment = AlignmentType.LEFT;
@@ -267,10 +287,10 @@ export default function PdfToWordConverter() {
       const blob = await Packer.toBlob(doc);
       saveAs(blob, pdfFile.name.replace(/\.[^/.]+$/, "") + " (Convertido).docx");
       setProgress(100);
-      toast({ title: "¡Conversión Exitosa!", description: "El documento editable se ha descargado correctamente." });
+      toast({ title: "¡Éxito!", description: "Conversión finalizada correctamente." });
     } catch (error) {
-      console.error("Error en conversión:", error);
-      toast({ variant: "destructive", title: "Error de conversión", description: "Ocurrió un fallo al reconstruir el documento." });
+      console.error("Fallo conversión:", error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo reconstruir el documento." });
     } finally {
       setIsConverting(false);
       setTimeout(() => setProgress(0), 3000);
@@ -303,10 +323,10 @@ export default function PdfToWordConverter() {
         <div className="w-full max-w-2xl space-y-8 animate-fade-in">
           <div className="text-center space-y-3">
             <h2 className="text-3xl sm:text-4xl font-headline font-black tracking-tighter text-slate-900 uppercase">
-              RECONSTRUCCIÓN FIEL
+              CONVERSIÓN FIEL
             </h2>
             <p className="text-slate-500 font-medium max-w-md mx-auto">
-              Analizamos fuentes originales (Times, Arial, etc), negritas e imágenes para un documento editable perfecto.
+              Reconstrucción de estilos, negritas y tipografías originales para un Word 100% editable.
             </p>
           </div>
 
@@ -323,7 +343,7 @@ export default function PdfToWordConverter() {
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{t.dropPdf}</h3>
-                  <p className="text-slate-500 font-bold text-sm">Privacidad 100%. Los archivos no salen de tu PC.</p>
+                  <p className="text-slate-500 font-bold text-sm">Procesamiento 100% privado en tu navegador.</p>
                 </div>
                 <Button className="bg-primary hover:bg-primary/90 text-white font-black px-8 py-6 rounded-2xl text-lg uppercase tracking-widest shadow-xl">
                   {t.selectPdf}
