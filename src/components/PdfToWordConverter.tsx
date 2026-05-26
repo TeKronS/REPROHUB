@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -8,9 +7,9 @@ import {
   ChevronLeft, 
   FileType, 
   Loader2, 
-  Upload, 
   X,
-  FileCheck
+  FileCheck,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -115,11 +114,12 @@ export default function PdfToWordConverter() {
       const docChildren: any[] = [];
 
       for (let i = 1; i <= numPages; i++) {
-        setStatusText(`Página ${i} de ${numPages}...`);
+        setStatusText(`Procesando página ${i} de ${numPages}...`);
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.0 });
         const pageWidth = viewport.width;
 
+        // 1. Extraer Imágenes (Incluyendo Cabeceras)
         const operatorList = await page.getOperatorList();
         for (let j = 0; j < operatorList.fnArray.length; j++) {
           const fn = operatorList.fnArray[j];
@@ -129,7 +129,7 @@ export default function PdfToWordConverter() {
               const imgObj = await new Promise((resolve) => {
                 page.objs.get(imgKey, (obj: any) => resolve(obj));
               });
-              if (imgObj) {
+              if (imgObj && (imgObj as any).data) {
                 const canvas = document.createElement('canvas');
                 canvas.width = (imgObj as any).width;
                 canvas.height = (imgObj as any).height;
@@ -138,27 +138,32 @@ export default function PdfToWordConverter() {
                   const imgData = ctx.createImageData(canvas.width, canvas.height);
                   imgData.data.set((imgObj as any).data);
                   ctx.putImageData(imgData, 0, 0);
+                  
                   docChildren.push(new Paragraph({
                     children: [new ImageRun({
                       data: canvas.toDataURL('image/png'),
                       transformation: { 
-                        width: Math.min(canvas.width / 3, pageWidth - 100), 
-                        height: canvas.height / 3 
+                        width: Math.min(canvas.width / 2.5, pageWidth - 100), 
+                        height: canvas.height / 2.5 
                       }
                     })],
                     alignment: AlignmentType.CENTER,
-                    spacing: { after: 200 }
+                    spacing: { after: 300 }
                   }));
                 }
               }
-            } catch (e) {}
+            } catch (e) {
+              console.warn("Error extrayendo imagen:", e);
+            }
           }
         }
 
+        // 2. Extraer Texto con Estilos y Fuentes
         const textContent = await page.getTextContent();
         const items = textContent.items as any[];
         const styles = textContent.styles as any;
 
+        // Ordenar items por posición Y (arriba a abajo) y luego X (izquierda a derecha)
         items.sort((a, b) => {
           const yDiff = b.transform[5] - a.transform[5];
           if (Math.abs(yDiff) > 5) return yDiff;
@@ -180,33 +185,28 @@ export default function PdfToWordConverter() {
           line.forEach(item => {
             const fontStyle = styles[item.fontName];
             
-            // Detección robusta de fuente
-            const fontStack = fontStyle?.fontFamily || "Arial";
-            let cleanFont = fontStack.split(',')[0].replace(/['"]/g, '').trim();
-            
-            // Normalización de nombres de fuentes comunes
-            const lowerFont = cleanFont.toLowerCase();
-            if (lowerFont.includes('times')) cleanFont = "Times New Roman";
-            else if (lowerFont.includes('arial')) cleanFont = "Arial";
-            else if (lowerFont.includes('calibri')) cleanFont = "Calibri";
-            else if (lowerFont.includes('courier')) cleanFont = "Courier New";
-            else if (lowerFont.includes('georgia')) cleanFont = "Georgia";
-            else if (lowerFont.includes('tahoma')) cleanFont = "Tahoma";
-            else if (lowerFont.includes('verdana')) cleanFont = "Verdana";
+            // Normalización de Fuentes (Times, Arial, Calibri)
+            let fontFamily = "Arial";
+            if (fontStyle && fontStyle.fontFamily) {
+              const rawFont = fontStyle.fontFamily.toLowerCase();
+              if (rawFont.includes('times')) fontFamily = "Times New Roman";
+              else if (rawFont.includes('calibri')) fontFamily = "Calibri";
+              else if (rawFont.includes('arial')) fontFamily = "Arial";
+              else if (rawFont.includes('serif')) fontFamily = "Times New Roman";
+            }
 
-            // Detección agresiva de Negrita
+            // Detección de Negritas (Bold)
             const fontNameLower = (item.fontName || "").toLowerCase();
-            const familyNameLower = cleanFont.toLowerCase();
             const isBold = fontNameLower.includes('bold') || 
-                           fontNameLower.includes('black') ||
+                           fontNameLower.includes('black') || 
                            fontNameLower.includes('heavy') ||
-                           fontNameLower.includes('-bd') ||
-                           fontNameLower.includes('_bold') ||
                            fontNameLower.includes('w7') ||
                            fontNameLower.includes('w8') ||
-                           fontNameLower.includes('w9') ||
-                           familyNameLower.includes('bold');
+                           fontNameLower.includes('w9');
             
+            // Detección de Subrayado (Basado en descriptor si está disponible)
+            const isUnderline = fontNameLower.includes('underline');
+
             minX = Math.min(minX, item.transform[4]);
             maxX = Math.max(maxX, item.transform[4] + item.width);
             const fontSize = Math.abs(item.transform[0]);
@@ -216,44 +216,45 @@ export default function PdfToWordConverter() {
               text: item.str,
               size: Math.round(fontSize * 2),
               bold: isBold,
-              font: cleanFont
+              underline: isUnderline ? {} : undefined,
+              font: fontFamily
             }));
           });
 
-          // Detección de saltos de línea físicos (Enters)
+          // Detección de Enters (Espaciado Vertical)
           if (lastLineY !== -1) {
             const verticalGap = lastLineY - line[0].transform[5];
-            const threshold = maxFontSize * 1.5; 
+            const threshold = maxFontSize * 1.8; // Umbral para detectar un "Enter" manual
             if (verticalGap > threshold) {
-              const numEnters = Math.max(1, Math.floor(verticalGap / (maxFontSize * 1.6)) - 1);
+              const numEnters = Math.max(1, Math.floor(verticalGap / (maxFontSize * 1.5)) - 1);
               for (let e = 0; e < numEnters; e++) {
                 docChildren.push(new Paragraph({ children: [new TextRun({ text: "" })] }));
               }
             }
           }
 
-          // Detección de alineación
+          // Detección de Alineación (Centrado, Derecha, Izquierda)
           const lineCenter = (minX + maxX) / 2;
           const pageCenter = pageWidth / 2;
           let alignment = AlignmentType.LEFT;
           
-          if (Math.abs(lineCenter - pageCenter) < 45) {
+          if (Math.abs(lineCenter - pageCenter) < 40) {
             alignment = AlignmentType.CENTER;
-          } else if (maxX > pageWidth - 100 && minX > pageWidth / 2) {
+          } else if (maxX > pageWidth - 120 && minX > pageWidth / 2) {
             alignment = AlignmentType.RIGHT;
           }
 
           docChildren.push(new Paragraph({
             children: textRuns,
             alignment: alignment,
-            spacing: { after: 80 }
+            spacing: { after: 120, line: 240 } // Interlineado estándar
           }));
 
           lastLineY = line[0].transform[5];
         };
 
         items.forEach(item => {
-          if (currentY !== -1 && Math.abs(item.transform[5] - currentY) > 6) {
+          if (currentY !== -1 && Math.abs(item.transform[5] - currentY) > 8) {
             processLine(lineItems);
             lineItems = [item];
           } else {
@@ -271,29 +272,29 @@ export default function PdfToWordConverter() {
         setProgress(10 + Math.round((i / numPages) * 85));
       }
 
-      const doc = new Document({
-        creator: "MultiPrintTools",
+      const docObj = new Document({
+        creator: "MultiPrintTools PRO",
         title: pdfFile.name,
         sections: [{
           properties: { 
             page: { 
-              margin: { top: 1100, right: 1100, bottom: 1100, left: 1100 } 
+              margin: { top: 1200, right: 1200, bottom: 1200, left: 1200 } 
             } 
           },
           children: docChildren,
         }],
       });
 
-      const blob = await Packer.toBlob(doc);
+      const blob = await Packer.toBlob(docObj);
       saveAs(blob, pdfFile.name.replace(/\.[^/.]+$/, "") + " (Convertido).docx");
       setProgress(100);
-      toast({ title: "¡Éxito!", description: "Conversión finalizada correctamente." });
+      toast({ title: "¡Éxito!", description: "Conversión finalizada con alta fidelidad." });
     } catch (error) {
       console.error("Fallo conversión:", error);
-      toast({ variant: "destructive", title: "Error", description: "No se pudo reconstruir el documento." });
+      toast({ variant: "destructive", title: "Error", description: "No se pudo reconstruir el documento fielmente." });
     } finally {
       setIsConverting(false);
-      setTimeout(() => setProgress(0), 3000);
+      setTimeout(() => setProgress(0), 4000);
     }
   };
 
@@ -322,11 +323,15 @@ export default function PdfToWordConverter() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 overflow-y-auto">
         <div className="w-full max-w-2xl space-y-8 animate-fade-in">
           <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1 rounded-full mb-2">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Motor de Alta Fidelidad v2.5</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-headline font-black tracking-tighter text-slate-900 uppercase">
-              CONVERSIÓN FIEL
+              EXTRACCIÓN INTELIGENTE
             </h2>
             <p className="text-slate-500 font-medium max-w-md mx-auto">
-              Reconstrucción de estilos, negritas y tipografías originales para un Word 100% editable.
+              Detección de tipografías originales, negritas, imágenes y espaciado real del documento.
             </p>
           </div>
 
@@ -334,7 +339,7 @@ export default function PdfToWordConverter() {
             {!libsReady ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                <p className="font-bold text-primary uppercase tracking-widest text-[10px]">Cargando motores locales...</p>
+                <p className="font-bold text-primary uppercase tracking-widest text-[10px]">Cargando motores locales de alta precisión...</p>
               </div>
             ) : !pdfFile ? (
               <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center space-y-6 cursor-pointer">
@@ -343,7 +348,7 @@ export default function PdfToWordConverter() {
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{t.dropPdf}</h3>
-                  <p className="text-slate-500 font-bold text-sm">Procesamiento 100% privado en tu navegador.</p>
+                  <p className="text-slate-500 font-bold text-sm">Privacidad garantizada: Procesamiento 100% local en tu navegador.</p>
                 </div>
                 <Button className="bg-primary hover:bg-primary/90 text-white font-black px-8 py-6 rounded-2xl text-lg uppercase tracking-widest shadow-xl">
                   {t.selectPdf}
@@ -387,11 +392,21 @@ export default function PdfToWordConverter() {
                   disabled={isConverting}
                 >
                   {isConverting ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : <FileCheck className="h-6 w-6 mr-2" />}
-                  {isConverting ? "Procesando..." : "Convertir y Descargar"}
+                  {isConverting ? "Procesando Estilos..." : "Convertir Fielmente"}
                 </Button>
               </div>
             )}
           </Card>
+
+          <div className="flex items-start gap-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+            <AlertCircle className="h-5 w-5 text-slate-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Nota de Calidad</p>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                Este motor intenta replicar el diseño original analizando la geometría del PDF. Los resultados pueden variar dependiendo de la complejidad de las capas del archivo original.
+              </p>
+            </div>
+          </div>
         </div>
       </main>
     </div>
