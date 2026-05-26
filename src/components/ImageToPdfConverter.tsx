@@ -203,7 +203,7 @@ export default function ImageToPdfConverter() {
         <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Configuración</h2>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="space-y-1">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.paperSize}</Label>
           <Select value={paperSize} onValueChange={setPaperSize}>
@@ -266,9 +266,9 @@ export default function ImageToPdfConverter() {
         </div>
       </div>
 
-      <Separator className="my-2 opacity-50" />
+      <Separator className="my-1 opacity-50" />
 
-      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-0.5">
+      <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-0.5">
         <div className="flex justify-between items-center">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Resumen</span>
           <span className="text-[10px] font-black text-primary">#{images.length}</span>
@@ -279,7 +279,7 @@ export default function ImageToPdfConverter() {
         </div>
       </div>
 
-      <div className="pt-2 space-y-2">
+      <div className="pt-1 space-y-2">
         <Button 
           className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95 text-xs"
           onClick={exportPdf}
@@ -361,25 +361,27 @@ export default function ImageToPdfConverter() {
 
         {/* Workspace - Center: Responsive Grid */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50 scroll-smooth">
-          <div className="max-w-6xl mx-auto flex flex-col gap-8 pb-20 lg:pb-8">
+          <div className="max-w-6xl mx-auto flex flex-col gap-8 pb-20 lg:pb-8 h-full min-h-full">
             {images.length === 0 ? (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center min-h-[400px] w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
-              >
-                <div className="p-6 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
-                  <Plus className="h-12 w-12 text-primary" />
+              <div className="flex-1 flex items-center justify-center h-full w-full">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center min-h-[400px] h-full w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
+                >
+                  <div className="p-6 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
+                    <Plus className="h-12 w-12 text-primary" />
+                  </div>
+                  <h3 className="mt-6 text-2xl font-headline font-black text-slate-800 uppercase tracking-tight">{t.imgToPdfTitle}</h3>
+                  <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    multiple 
+                    accept="image/*" 
+                    onChange={handleFileSelect} 
+                    className="hidden" 
+                  />
                 </div>
-                <h3 className="mt-6 text-2xl font-headline font-black text-slate-800 uppercase tracking-tight">{t.imgToPdfTitle}</h3>
-                <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  multiple 
-                  accept="image/*" 
-                  onChange={handleFileSelect} 
-                  className="hidden" 
-                />
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,200px))] gap-8 justify-center sm:justify-start">
