@@ -333,15 +333,7 @@ export default function ImageToPdfConverter() {
         </div>
       </div>
 
-      <div className="pt-1 space-y-2">
-        <Button 
-          className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95 text-xs"
-          onClick={exportPdf}
-          disabled={expandedImagesList.length === 0 || isExporting}
-        >
-          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-          {isExporting ? t.generating : t.export}
-        </Button>
+      <div className="pt-2 space-y-4">
         <Button 
           variant="ghost" 
           className="w-full text-slate-400 hover:text-destructive transition-colors font-bold text-[9px] uppercase tracking-widest"
@@ -350,6 +342,8 @@ export default function ImageToPdfConverter() {
         >
           {t.clearAll}
         </Button>
+        {/* Espacio en blanco reservado para evitar que el botón flotante móvil tape contenido */}
+        <div className="h-20 sm:h-0" />
       </div>
     </div>
   );
@@ -387,7 +381,7 @@ export default function ImageToPdfConverter() {
       </header>
 
       <main className="flex-1 flex overflow-hidden relative">
-        <aside className="hidden md:flex w-[80px] bg-white border-r border-border flex-col items-center py-4 gap-4 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
+        <aside className="hidden md:flex w-[60px] bg-white border-r border-border flex-col items-center py-4 gap-3 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
           {expandedImagesList.map((img, idx) => (
             <div 
               key={img.id} 
