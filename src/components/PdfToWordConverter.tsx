@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -23,7 +24,7 @@ import logo from "@/app/icono.png";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
 
-// Versión estable de PDF.js
+// Versión estable 3.x para máxima compatibilidad con navegadores y sin errores de sintaxis modernos
 const PDFJS_VERSION = "3.11.174";
 const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
 const PDFJS_WORKER_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
@@ -43,27 +44,32 @@ export default function PdfToWordConverter() {
   useEffect(() => {
     setMounted(true);
     
-    // Carga dinámica de PDF.js para evitar errores de compilación/empaquetado
     const loadPdfJs = () => {
-      if ((window as any).pdfjsLib) {
+      // Si ya está cargado globalmente, marcar como listo
+      if (typeof window !== "undefined" && (window as any).pdfjsLib) {
         setLibReady(true);
         return;
       }
 
       const script = document.createElement("script");
       script.src = PDFJS_CDN;
+      script.async = true;
       script.onload = () => {
         const pdfjsLib = (window as any).pdfjsLib;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
-        setLibReady(true);
+        if (pdfjsLib) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+          setLibReady(true);
+        }
       };
       script.onerror = () => {
-        console.error("No se pudo cargar el motor de PDF");
+        console.error("No se pudo cargar el motor de PDF desde el CDN");
       };
       document.head.appendChild(script);
     };
 
-    loadPdfJs();
+    if (typeof window !== "undefined") {
+      loadPdfJs();
+    }
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,12 +86,12 @@ export default function PdfToWordConverter() {
   };
 
   const convertToWord = async () => {
-    const pdfjsLib = (window as any).pdfjsLib;
+    const pdfjsLib = typeof window !== "undefined" ? (window as any).pdfjsLib : null;
     if (!pdfFile || !pdfjsLib) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "El motor de conversión aún no está listo."
+        description: "El motor de conversión aún no está listo. Por favor, espera un momento."
       });
       return;
     }
@@ -109,7 +115,7 @@ export default function PdfToWordConverter() {
         let currentLine = "";
 
         textContent.items.forEach((item: any) => {
-          // Heurística de detección de líneas basada en posición vertical
+          // Heurística simple para agrupar texto en párrafos/líneas basada en posición vertical
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
             if (currentLine.trim()) {
               paragraphs.push(new Paragraph({
@@ -123,14 +129,13 @@ export default function PdfToWordConverter() {
           lastY = item.transform[5];
         });
 
-        // Última línea de la página
         if (currentLine.trim()) {
           paragraphs.push(new Paragraph({
             children: [new TextRun(currentLine)],
           }));
         }
 
-        // Salto de página en Word
+        // Añadir espacio entre páginas
         if (i < numPages) {
           paragraphs.push(new Paragraph({
             children: [new TextRun({ text: "", break: 1 })],
@@ -153,14 +158,14 @@ export default function PdfToWordConverter() {
       setProgress(100);
       toast({
         title: "Éxito",
-        description: "Archivo Word descargado correctamente."
+        description: "Documento Word generado localmente."
       });
     } catch (error) {
       console.error("Error en conversión:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo procesar el PDF localmente."
+        description: "Error al procesar el PDF. Asegúrate de que el archivo no esté protegido."
       });
     } finally {
       setIsConverting(false);
@@ -207,7 +212,7 @@ export default function PdfToWordConverter() {
             {!libReady ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-xs">Iniciando motor local...</p>
+                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-xs">Cargando motor local...</p>
               </div>
             ) : !pdfFile ? (
               <div 
@@ -256,7 +261,7 @@ export default function PdfToWordConverter() {
                 {isConverting && (
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm font-black text-primary uppercase tracking-widest">
-                      <span>Procesando archivo...</span>
+                      <span>Procesando PDF...</span>
                       <span>{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-3 bg-primary/10" />
@@ -274,7 +279,7 @@ export default function PdfToWordConverter() {
                     ) : (
                       <FileCheck className="h-6 w-6 mr-2" />
                     )}
-                    {isConverting ? "Analizando..." : t.downloadDocx}
+                    {isConverting ? "Procesando..." : t.downloadDocx}
                   </Button>
                 </div>
               </div>
@@ -284,7 +289,7 @@ export default function PdfToWordConverter() {
           <div className="flex items-center gap-4 p-4 bg-orange-50 border border-orange-100 rounded-2xl">
             <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
             <p className="text-[11px] font-bold text-orange-700 leading-tight">
-              Procesamiento Local: Tus archivos no se suben a ningún servidor. La conversión se realiza íntegramente en tu navegador para máxima privacidad.
+              Seguridad Local: La conversión ocurre en tu dispositivo. Tus documentos nunca salen de tu navegador.
             </p>
           </div>
         </div>
