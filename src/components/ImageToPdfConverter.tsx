@@ -342,7 +342,6 @@ export default function ImageToPdfConverter() {
         >
           {t.clearAll}
         </Button>
-        {/* Espacio en blanco reservado para evitar que el botón flotante móvil tape contenido */}
         <div className="h-32 sm:h-0" />
       </div>
     </div>
@@ -381,33 +380,33 @@ export default function ImageToPdfConverter() {
       </header>
 
       <main className="flex-1 flex overflow-hidden relative">
-        <aside className="hidden md:flex w-[60px] bg-white border-r border-border flex-col items-center py-4 gap-3 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
+        <aside className="hidden md:flex w-[60px] bg-white border-r border-border flex-col items-center py-4 gap-2 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
           {expandedImagesList.map((img, idx) => (
             <div 
               key={img.id} 
-              className="relative w-10 aspect-[3/4] border border-slate-200 rounded-sm overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer shrink-0"
+              className="relative w-8 aspect-[3/4] border border-slate-200 rounded-sm overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer shrink-0"
               onClick={() => {
                 document.getElementById(`page-${img.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
             >
               <img src={img.url} alt="" className="w-full h-full object-cover" />
-              <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[7px] font-black text-white px-0.5 min-w-[12px] text-center rounded-br-[2px] shadow-sm">
+              <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[6px] font-black text-white px-0.5 min-w-[10px] text-center rounded-br-[2px] shadow-sm">
                 {idx + 1}
               </div>
             </div>
           ))}
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 border border-dashed border-slate-300 rounded-sm flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400 shrink-0"
+            className="w-8 h-8 border border-dashed border-slate-300 rounded-sm flex items-center justify-center hover:bg-slate-50 hover:border-primary/50 transition-colors text-slate-400 shrink-0"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3 w-3" />
           </button>
         </aside>
 
         <div className="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-8 bg-slate-100/50 scroll-smooth">
           <div className="max-w-6xl mx-auto h-full">
             {images.length === 0 ? (
-              <div className="flex items-center justify-center h-full min-h-full w-full">
+              <div className="flex items-center justify-center h-full min-h-[150px] w-full">
                 <div 
                   onClick={() => fileInputRef.current?.click()}
                   className="flex flex-col items-center justify-center min-h-[150px] h-full w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
@@ -428,7 +427,7 @@ export default function ImageToPdfConverter() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-flow-col auto-cols-max gap-8 items-start pb-32">
+              <div className="flex flex-wrap gap-8 items-start pb-32">
                 {images.map((img, idx) => (
                   <div 
                     key={img.id} 
@@ -473,7 +472,7 @@ export default function ImageToPdfConverter() {
 
                     <div 
                       className="relative w-full bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)] rounded-sm overflow-hidden border border-slate-200"
-                      style={{ aspectRatio: `${aspectRatio}`, maxWidth: '200px' }}
+                      style={{ aspectRatio: `${aspectRatio}` }}
                     >
                       <div 
                         className="absolute inset-0 bg-white" 
@@ -525,7 +524,7 @@ export default function ImageToPdfConverter() {
                 
                 <Button 
                   variant="outline" 
-                  className="w-[200px] aspect-square border-2 border-dashed border-primary/20 hover:border-primary/40 hover:bg-white text-primary/60 font-black gap-2 rounded-xl transition-all flex flex-col justify-center"
+                  className="w-full max-w-[200px] aspect-square border-2 border-dashed border-primary/20 hover:border-primary/40 hover:bg-white text-primary/60 font-black gap-2 rounded-xl transition-all flex flex-col justify-center"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <PlusCircle className="h-6 w-6" />
