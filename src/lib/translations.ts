@@ -63,7 +63,9 @@ export const translations = {
     fill: 'Fill Page',
     generating: 'Generating PDF...',
     noImages: 'No images added yet',
-    imagesPerPage: 'Images per Page'
+    imagesPerPage: 'Images per Page',
+    quantity: 'Quantity',
+    copies: 'copies'
   },
   es: {
     title: 'MURALIS',
@@ -126,6 +128,8 @@ export const translations = {
     fill: 'Llenar página',
     generating: 'Generando PDF...',
     noImages: 'Aún no hay imágenes',
-    imagesPerPage: 'Imágenes por Página'
+    imagesPerPage: 'Imágenes por Página',
+    quantity: 'Cantidad',
+    copies: 'copias'
   }
 };

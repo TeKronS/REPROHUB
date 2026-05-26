@@ -6,23 +6,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { 
   ChevronLeft, 
-  FileText, 
   Plus, 
   Trash2, 
   FileDown, 
   Loader2, 
   Settings2,
-  Image as ImageIcon,
-  MoveUp,
-  MoveDown,
   X,
   PlusCircle,
-  GripVertical,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { 
   Select, 
   SelectContent, 
@@ -39,6 +34,7 @@ import {
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { Language, translations } from "@/lib/translations";
@@ -61,6 +57,7 @@ interface ImageData {
   url: string;
   file: File;
   name: string;
+  quantity: number;
 }
 
 export default function ImageToPdfConverter() {
@@ -90,6 +87,17 @@ export default function ImageToPdfConverter() {
       : paper.height / paper.width;
   }, [paper, orientation]);
 
+  // Expand images based on their quantity
+  const expandedImagesList = useMemo(() => {
+    const list: ImageData[] = [];
+    images.forEach(img => {
+      for (let i = 0; i < img.quantity; i++) {
+        list.push({ ...img, id: `${img.id}-copy-${i}` });
+      }
+    });
+    return list;
+  }, [images]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -98,7 +106,8 @@ export default function ImageToPdfConverter() {
       id: Math.random().toString(36).substring(2, 9),
       url: URL.createObjectURL(file),
       file,
-      name: file.name
+      name: file.name,
+      quantity: 1
     }));
 
     setImages(prev => [...prev, ...newImages]);
@@ -107,6 +116,10 @@ export default function ImageToPdfConverter() {
 
   const removeImage = (id: string) => {
     setImages(prev => prev.filter(img => img.id !== id));
+  };
+
+  const updateQuantity = (id: string, qty: number) => {
+    setImages(prev => prev.map(img => img.id === id ? { ...img, quantity: Math.max(1, qty) } : img));
   };
 
   const moveImage = (index: number, direction: 'up' | 'down') => {
@@ -121,7 +134,7 @@ export default function ImageToPdfConverter() {
   };
 
   const exportPdf = async () => {
-    if (images.length === 0) return;
+    if (expandedImagesList.length === 0) return;
     setIsExporting(true);
 
     try {
@@ -139,7 +152,6 @@ export default function ImageToPdfConverter() {
 
       const nPerPage = parseInt(imagesPerPage);
       
-      // Determine Grid Layout for Multiple Images
       let gridRows = 1;
       let gridCols = 1;
       
@@ -159,11 +171,10 @@ export default function ImageToPdfConverter() {
       const cellWidth = usableWidth / gridCols;
       const cellHeight = usableHeight / gridRows;
 
-      // Group images by page
-      for (let i = 0; i < images.length; i += nPerPage) {
+      for (let i = 0; i < expandedImagesList.length; i += nPerPage) {
         if (i > 0) pdf.addPage();
 
-        const pageImages = images.slice(i, i + nPerPage);
+        const pageImages = expandedImagesList.slice(i, i + nPerPage);
 
         for (let j = 0; j < pageImages.length; j++) {
           const imgData = pageImages[j];
@@ -227,14 +238,14 @@ export default function ImageToPdfConverter() {
   if (!mounted) return null;
 
   const renderSettingsContent = () => (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-2 mb-1">
         <Settings2 className="h-4 w-4 text-primary" />
         <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Configuración</h2>
       </div>
 
-      <div className="space-y-2">
-        <div className="space-y-1">
+      <div className="space-y-1.5">
+        <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.paperSize}</Label>
           <Select value={paperSize} onValueChange={setPaperSize}>
             <SelectTrigger className="font-bold border-2 h-8 text-xs">
@@ -248,7 +259,7 @@ export default function ImageToPdfConverter() {
           </Select>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.orientation}</Label>
           <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
             <SelectTrigger className="font-bold border-2 h-8 text-xs">
@@ -261,7 +272,7 @@ export default function ImageToPdfConverter() {
           </Select>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.imagesPerPage}</Label>
           <Select value={imagesPerPage} onValueChange={setImagesPerPage}>
             <SelectTrigger className="font-bold border-2 h-8 text-xs">
@@ -277,7 +288,7 @@ export default function ImageToPdfConverter() {
           </Select>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.imageFit}</Label>
           <Select value={fitMode} onValueChange={(v: any) => setFitMode(v)}>
             <SelectTrigger className="font-bold border-2 h-8 text-xs">
@@ -290,7 +301,7 @@ export default function ImageToPdfConverter() {
           </Select>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <div className="flex justify-between">
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{t.margins}</Label>
             <span className="text-[10px] font-black text-primary">{margin} cm</span>
@@ -317,11 +328,11 @@ export default function ImageToPdfConverter() {
       <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-0.5">
         <div className="flex justify-between items-center">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Resumen</span>
-          <span className="text-[10px] font-black text-primary">#{images.length}</span>
+          <span className="text-[10px] font-black text-primary">#{expandedImagesList.length}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Hojas Totales</span>
-          <span className="text-[10px] font-black text-slate-700">{Math.ceil(images.length / parseInt(imagesPerPage))}</span>
+          <span className="text-[10px] font-black text-slate-700">{Math.ceil(expandedImagesList.length / parseInt(imagesPerPage))}</span>
         </div>
       </div>
 
@@ -329,7 +340,7 @@ export default function ImageToPdfConverter() {
         <Button 
           className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-lg transition-transform active:scale-95 text-xs"
           onClick={exportPdf}
-          disabled={images.length === 0 || isExporting}
+          disabled={expandedImagesList.length === 0 || isExporting}
         >
           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           {isExporting ? t.generating : t.export}
@@ -347,7 +358,7 @@ export default function ImageToPdfConverter() {
   );
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-slate-50 font-body overflow-hidden">
+    <div className="flex flex-col h-screen bg-slate-50 font-body overflow-hidden">
       <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/">
@@ -370,7 +381,7 @@ export default function ImageToPdfConverter() {
           <Button 
             className="hidden sm:flex bg-primary hover:bg-primary/90 text-white font-black gap-2 rounded-xl shadow-md h-9 px-5 text-xs"
             onClick={exportPdf}
-            disabled={images.length === 0 || isExporting}
+            disabled={expandedImagesList.length === 0 || isExporting}
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
             {isExporting ? t.generating : t.export}
@@ -380,17 +391,15 @@ export default function ImageToPdfConverter() {
 
       <main className="flex-1 flex overflow-hidden relative">
         <aside className="hidden md:flex w-[80px] bg-white border-r border-border flex-col items-center py-4 gap-4 overflow-y-auto shrink-0 shadow-inner z-10 scrollbar-hide">
-          {images.map((img, idx) => (
+          {expandedImagesList.map((img, idx) => (
             <div 
               key={img.id} 
               className="relative w-10 aspect-[3/4] border border-slate-200 rounded-sm overflow-hidden bg-slate-50 shadow-sm transition-all hover:border-primary/50 group cursor-pointer shrink-0"
-              title={img.name}
               onClick={() => {
                 document.getElementById(`page-${img.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
             >
               <img src={img.url} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors" />
               <div className="absolute top-0 left-0 bg-primary/90 backdrop-blur-sm text-[7px] font-black text-white px-0.5 min-w-[12px] text-center rounded-br-[2px] shadow-sm">
                 {idx + 1}
               </div>
@@ -432,28 +441,9 @@ export default function ImageToPdfConverter() {
                 {images.map((img, idx) => (
                   <div 
                     key={img.id} 
-                    id={`page-${img.id}`}
                     className="relative group w-full max-w-[200px] animate-fade-in"
                   >
-                    <div className="absolute -top-3 -right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="h-7 w-7 rounded-lg shadow-lg" 
-                        onClick={() => moveImage(idx, 'up')} 
-                        disabled={idx === 0}
-                      >
-                        <ArrowLeft className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="h-7 w-7 rounded-lg shadow-lg" 
-                        onClick={() => moveImage(idx, 'down')} 
-                        disabled={idx === images.length - 1}
-                      >
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Button>
+                    <div className="absolute -top-3 -right-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button 
                         size="icon" 
                         variant="destructive" 
@@ -462,10 +452,30 @@ export default function ImageToPdfConverter() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
+                      <div className="flex flex-col gap-1">
+                        <Button 
+                          size="icon" 
+                          variant="secondary" 
+                          className="h-7 w-7 rounded-lg shadow-lg" 
+                          onClick={() => moveImage(idx, 'up')} 
+                          disabled={idx === 0}
+                        >
+                          <ArrowLeft className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="secondary" 
+                          className="h-7 w-7 rounded-lg shadow-lg" 
+                          onClick={() => moveImage(idx, 'down')} 
+                          disabled={idx === images.length - 1}
+                        >
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pág {idx + 1}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Original {idx + 1}</span>
                       <span className="text-[9px] font-bold text-slate-400 truncate max-w-[120px]">{img.name}</span>
                     </div>
 
@@ -485,6 +495,37 @@ export default function ImageToPdfConverter() {
                             fitMode === 'fit' ? 'object-contain' : 'object-cover'
                           )} 
                         />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 bg-white p-2 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[9px] font-black uppercase text-slate-400">{t.quantity}</Label>
+                        <span className="text-[10px] font-black text-primary">{img.quantity} {t.copies}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-lg"
+                          onClick={() => updateQuantity(img.id, img.quantity - 1)}
+                        >
+                          <X className="h-3 w-3 rotate-45" />
+                        </Button>
+                        <Input 
+                          type="number" 
+                          value={img.quantity}
+                          onChange={(e) => updateQuantity(img.id, parseInt(e.target.value) || 1)}
+                          className="h-7 text-center font-black text-xs p-0 border-none bg-slate-50"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-lg"
+                          onClick={() => updateQuantity(img.id, img.quantity + 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -508,7 +549,7 @@ export default function ImageToPdfConverter() {
           {renderSettingsContent()}
         </aside>
 
-        {images.length > 0 && (
+        {expandedImagesList.length > 0 && (
           <div className="lg:hidden fixed bottom-6 left-6 right-24 z-[100] pointer-events-auto animate-in slide-in-from-bottom-10 duration-500">
             <Button 
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black gap-3 rounded-2xl shadow-2xl transition-all active:scale-95 text-sm uppercase tracking-widest border-4 border-white/10"
@@ -526,11 +567,7 @@ export default function ImageToPdfConverter() {
             <Button 
               size="icon" 
               className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsMenuOpen(!isMenuOpen);
-              }}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <Settings2 className="h-6 w-6" />
             </Button>
