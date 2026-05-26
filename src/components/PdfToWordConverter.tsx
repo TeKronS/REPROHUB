@@ -10,8 +10,7 @@ import {
   Loader2, 
   Upload, 
   X,
-  FileCheck,
-  AlertCircle
+  FileCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,10 +20,17 @@ import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import logo from "@/app/icono.png";
 
-// Versión ultra-compatible de PDF.js (v2.x no usa bloques estáticos de clase que causan el error 'super')
+// Versiones estables y compatibles para navegador vía CDN
 const PDFJS_VERSION = "2.16.105";
-const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
-const PDFJS_WORKER_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
+const DOCX_VERSION = "8.5.0";
+const FILE_SAVER_VERSION = "2.0.5";
+
+const LIBS = [
+  { id: 'pdfjs', url: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js` },
+  { id: 'pdfjs-worker', url: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js` },
+  { id: 'docx', url: `https://unpkg.com/docx@${DOCX_VERSION}/build/index.js` },
+  { id: 'file-saver', url: `https://cdnjs.cloudflare.com/ajax/libs/file-saver.js/${FILE_SAVER_VERSION}/FileSaver.min.js` }
+];
 
 export default function PdfToWordConverter() {
   const [mounted, setMounted] = useState(false);
@@ -36,51 +42,60 @@ export default function PdfToWordConverter() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [libReady, setLibReady] = useState(false);
+  const [libsReady, setLibsReady] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     
-    const loadPdfJs = () => {
-      console.log("Iniciando carga de PDF.js v" + PDFJS_VERSION);
-      if (typeof window === "undefined") return;
-      
-      if ((window as any).pdfjsLib) {
-        console.log("PDF.js ya estaba cargado en el objeto window.");
-        setLibReady(true);
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = PDFJS_CDN;
-      script.async = true;
-      script.onload = () => {
-        console.log("Script principal de PDF.js cargado correctamente.");
-        const pdfjsLib = (window as any).pdfjsLib;
-        if (pdfjsLib) {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
-          console.log("Worker de PDF.js configurado vía CDN.");
-          setLibReady(true);
-        } else {
-          console.error("PDF.js cargado pero pdfjsLib no encontrado en window.");
-        }
-      };
-      script.onerror = (err) => {
-        console.error("Error cargando el script de PDF.js desde el CDN:", err);
-      };
-      document.head.appendChild(script);
+    const loadScript = (url: string) => {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = url;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = (e) => {
+          console.error(`Error cargando script: ${url}`, e);
+          reject(e);
+        };
+        document.head.appendChild(script);
+      });
     };
 
-    loadPdfJs();
+    const loadAllLibs = async () => {
+      if (typeof window === "undefined") return;
+      
+      console.log("Iniciando carga de motores locales via CDN...");
+      try {
+        // Cargamos secuencialmente para evitar conflictos
+        await loadScript(LIBS[0].url); // pdf.js
+        await loadScript(LIBS[2].url); // docx
+        await loadScript(LIBS[3].url); // file-saver
+        
+        const pdfjsLib = (window as any).pdfjsLib;
+        if (pdfjsLib) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS[1].url;
+        }
+        
+        console.log("Motores cargados con éxito.");
+        setLibsReady(true);
+      } catch (err) {
+        console.error("Fallo crítico al cargar motores externos:", err);
+        toast({
+          variant: "destructive",
+          title: "Error de conexión",
+          description: "No se pudieron cargar los motores de conversión. Revisa tu conexión."
+        });
+      }
+    };
+
+    loadAllLibs();
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === "application/pdf") {
-      console.log("Archivo PDF seleccionado:", file.name, "(" + file.size + " bytes)");
       setPdfFile(file);
     } else if (file) {
-      console.warn("Intento de carga de archivo no PDF:", file.type);
       toast({
         variant: "destructive",
         title: "Formato no válido",
@@ -90,63 +105,33 @@ export default function PdfToWordConverter() {
   };
 
   const convertToWord = async () => {
-    console.log("Iniciando proceso de conversión PDF -> Word...");
-    const pdfjsLib = (window as any).pdfjsLib;
+    if (!pdfFile || !libsReady) return;
     
-    if (!pdfFile) {
-      console.error("No hay archivo PDF seleccionado.");
+    const pdfjsLib = (window as any).pdfjsLib;
+    const docx = (window as any).docx;
+    const saveAs = (window as any).saveAs;
+
+    if (!pdfjsLib || !docx || !saveAs) {
+      console.error("Librerías no encontradas en el objeto window.");
       return;
     }
 
-    if (!pdfjsLib) {
-      console.error("Librería pdfjsLib no disponible en el momento de la conversión.");
-      toast({
-        variant: "destructive",
-        title: "Error de motor",
-        description: "El motor de PDF no está listo. Recarga la página."
-      });
-      return;
-    }
-    
     setIsConverting(true);
     setProgress(5);
 
     try {
-      console.log("Paso 1: Importación dinámica de librerías secundarias...");
-      
-      // Intentamos importar docx de forma aislada
-      console.log("Importando 'docx'...");
-      const docx = await import("docx").catch(err => {
-        console.error("Error fatal importando 'docx':", err);
-        throw err;
-      });
-      console.log("'docx' importado con éxito.");
-
-      // Intentamos importar file-saver de forma aislada
-      console.log("Importando 'file-saver'...");
-      const fileSaver = await import("file-saver").catch(err => {
-        console.error("Error fatal importando 'file-saver':", err);
-        throw err;
-      });
-      console.log("'file-saver' importado con éxito.");
-
       const { Document, Packer, Paragraph, TextRun } = docx;
-      const { saveAs } = fileSaver;
 
-      console.log("Paso 2: Leyendo ArrayBuffer del archivo...");
+      console.log("Leyendo PDF...");
       const arrayBuffer = await pdfFile.arrayBuffer();
-      
-      console.log("Paso 3: Cargando documento PDF con PDF.js...");
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       
       const numPages = pdf.numPages;
-      console.log("Documento PDF cargado. Total de páginas:", numPages);
-      
       const docParagraphs: any[] = [];
 
       for (let i = 1; i <= numPages; i++) {
-        console.log("Procesando página " + i + " de " + numPages + "...");
+        console.log(`Procesando página ${i}...`);
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
@@ -154,7 +139,6 @@ export default function PdfToWordConverter() {
         let currentLine = "";
 
         textContent.items.forEach((item: any) => {
-          // Lógica de detección de líneas basada en coordenadas Y
           if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
             if (currentLine.trim()) {
               docParagraphs.push(new Paragraph({
@@ -174,16 +158,10 @@ export default function PdfToWordConverter() {
           }));
         }
 
-        if (i < numPages) {
-          docParagraphs.push(new Paragraph({
-            children: [new TextRun({ text: "", break: 1 })],
-          }));
-        }
-
         setProgress(10 + (Math.round((i / numPages) * 80)));
       }
 
-      console.log("Paso 4: Generando estructura final del archivo Word...");
+      console.log("Generando archivo .docx...");
       const doc = new Document({
         sections: [{
           properties: {},
@@ -191,23 +169,20 @@ export default function PdfToWordConverter() {
         }],
       });
 
-      console.log("Paso 5: Empaquetando y disparando descarga...");
       const buffer = await Packer.toBlob(doc);
       saveAs(buffer, pdfFile.name.replace(".pdf", ".docx"));
       
-      console.log("Conversión completada con éxito.");
       setProgress(100);
       toast({
         title: "Conversión terminada",
         description: "El archivo Word se ha generado correctamente."
       });
     } catch (error: any) {
-      console.error("ERROR CRÍTICO DURANTE LA CONVERSIÓN:", error);
-      console.error("Detalle del error:", error.message, error.stack);
+      console.error("Error en conversión:", error);
       toast({
         variant: "destructive",
         title: "Error de procesamiento",
-        description: "Error: " + (error.message || "Error desconocido en el navegador.")
+        description: error.message || "Error desconocido durante la conversión."
       });
     } finally {
       setIsConverting(false);
@@ -251,10 +226,10 @@ export default function PdfToWordConverter() {
           </div>
 
           <Card className="border-4 border-dashed border-primary/20 p-8 sm:p-12 bg-white/50 backdrop-blur-sm rounded-[2.5rem] relative overflow-hidden group shadow-xl">
-            {!libReady ? (
+            {!libsReady ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4">
                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-[10px]">Cargando motor local compatible...</p>
+                <p className="font-bold text-primary animate-pulse uppercase tracking-widest text-[10px]">Cargando motores 100% locales...</p>
               </div>
             ) : !pdfFile ? (
               <div 
@@ -293,10 +268,7 @@ export default function PdfToWordConverter() {
                     variant="ghost" 
                     size="icon" 
                     className="rounded-full text-slate-400 hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => {
-                      console.log("Removiendo archivo actual...");
-                      setPdfFile(null);
-                    }}
+                    onClick={() => setPdfFile(null)}
                     disabled={isConverting}
                   >
                     <X className="h-6 w-6" />
@@ -313,20 +285,18 @@ export default function PdfToWordConverter() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-4">
-                  <Button 
-                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-2xl shadow-primary/20 text-lg uppercase tracking-widest transition-all active:scale-95"
-                    onClick={convertToWord}
-                    disabled={isConverting}
-                  >
-                    {isConverting ? (
-                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                    ) : (
-                      <FileCheck className="h-6 w-6 mr-2" />
-                    )}
-                    {isConverting ? "Procesando..." : t.downloadDocx}
-                  </Button>
-                </div>
+                <Button 
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-2xl shadow-primary/20 text-lg uppercase tracking-widest transition-all active:scale-95"
+                  onClick={convertToWord}
+                  disabled={isConverting}
+                >
+                  {isConverting ? (
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  ) : (
+                    <FileCheck className="h-6 w-6 mr-2" />
+                  )}
+                  {isConverting ? "Procesando..." : t.downloadDocx}
+                </Button>
               </div>
             )}
           </Card>
@@ -336,9 +306,9 @@ export default function PdfToWordConverter() {
               <FileCheck className="h-5 w-5 text-emerald-600 shrink-0" />
             </div>
             <div className="space-y-0.5">
-              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Procesamiento Privado Local</p>
+              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-tighter">Privacidad Total Garantizada</p>
               <p className="text-[10px] font-bold text-emerald-700/80 leading-tight">
-                Utilizamos el motor de tu navegador para la conversión. Abre la consola del desarrollador (F12) para ver el progreso detallado.
+                Tus archivos nunca salen de este navegador. La conversión se realiza íntegramente de forma local mediante JavaScript.
               </p>
             </div>
           </div>
