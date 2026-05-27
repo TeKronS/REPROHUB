@@ -21,5 +21,14 @@ MultiPrintTools es una suite de herramientas digitales de alto rendimiento dise�
 - **Imagen a PDF:** Convierte colecciones de imágenes en documentos PDF profesionales.
 - **PDF a Word PRO:** Conversión de alta fidelidad preservando el diseño original.
 
+## 📏 Estándares de Desarrollo
+Este proyecto utiliza **Conventional Commits** para el historial de cambios:
+- `feat:` Nuevas funcionalidades.
+- `fix:` Corrección de errores.
+- `docs:` Cambios en documentación.
+- `style:` Cambios de diseño/formato que no afectan la lógica.
+- `refactor:` Mejora de código que no añade funciones ni corrige errores.
+- `chore:` Tareas de mantenimiento o actualización de dependencias.
+
 ---
 *Diseñado y desarrollado por Tekron Web Studio - Herramientas para el mundo real.*
