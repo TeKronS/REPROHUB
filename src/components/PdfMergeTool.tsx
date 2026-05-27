@@ -58,7 +58,12 @@ export default function PdfMergeTool() {
 
   const processFiles = (newFiles: FileList | File[]) => {
     const pdfFiles: PdfFile[] = Array.from(newFiles)
-      .filter(file => file.type === "application/pdf")
+      .filter(file => {
+        // Filtramos por tipo MIME o por extensión como respaldo
+        const isPdfType = file.type === "application/pdf";
+        const isPdfExt = file.name.toLowerCase().endsWith('.pdf');
+        return isPdfType || isPdfExt;
+      })
       .map(file => ({
         id: Math.random().toString(36).substring(2, 9),
         file,
@@ -126,7 +131,16 @@ export default function PdfMergeTool() {
 
       for (const fileObj of files) {
         const fileArrayBuffer = await fileObj.file.arrayBuffer();
-        const pdf = await PDFDocument.load(fileArrayBuffer);
+        
+        // Validación básica de cabecera PDF antes de procesar
+        const uint8Array = new Uint8Array(fileArrayBuffer);
+        const header = String.fromCharCode(...uint8Array.slice(0, 5));
+        
+        if (!header.startsWith('%PDF-')) {
+          throw new Error(`El archivo "${fileObj.name}" no parece ser un PDF válido.`);
+        }
+
+        const pdf = await PDFDocument.load(uint8Array);
         const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       }
@@ -145,9 +159,13 @@ export default function PdfMergeTool() {
       link.click();
       
       toast({ title: "¡Éxito!", description: "Archivos combinados correctamente." });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast({ variant: "destructive", title: "Error", description: "No se pudieron combinar los archivos." });
+      toast({ 
+        variant: "destructive", 
+        title: "Error de combinación", 
+        description: error.message || "No se pudieron combinar los archivos. Verifica que no estén protegidos por contraseña." 
+      });
     } finally {
       setIsMerging(false);
     }
