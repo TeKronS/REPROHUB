@@ -470,9 +470,13 @@ export default function ImageToPdfConverter() {
               <div className="flex flex-wrap gap-8 items-start justify-center pb-32">
                 {images.map((img, idx) => {
                   const currentImgOrient = img.orientation || orientation;
-                  const currentAspectRatio = currentImgOrient === 'portrait' 
-                    ? paper.width / paper.height 
-                    : paper.height / paper.width;
+                  const paperW = currentImgOrient === 'portrait' ? paper.width : paper.height;
+                  const paperH = currentImgOrient === 'portrait' ? paper.height : paper.width;
+                  const currentAspectRatio = paperW / paperH;
+
+                  // Calculamos los porcentajes de margen relativos al tamaño real del papel
+                  const marginPercentX = (margin * 10 / paperW) * 100;
+                  const marginPercentY = (margin * 10 / paperH) * 100;
 
                   return (
                     <div 
@@ -522,7 +526,12 @@ export default function ImageToPdfConverter() {
                       >
                         <div 
                           className="absolute inset-0 bg-white" 
-                          style={{ padding: `${margin}cm` }}
+                          style={{ 
+                            top: `${marginPercentY}%`, 
+                            bottom: `${marginPercentY}%`, 
+                            left: `${marginPercentX}%`, 
+                            right: `${marginPercentX}%` 
+                          }}
                         >
                           <img 
                             src={img.url} 
