@@ -123,25 +123,25 @@ export default function Home() {
               className={tool.status === 'coming-soon' ? 'pointer-events-none' : ''}
             >
               <Card className={`group relative h-full transition-all duration-300 border-2 ${tool.status === 'active' ? 'hover:border-primary hover:shadow-2xl hover:shadow-primary/10 cursor-pointer' : 'opacity-60 bg-muted/30 border-dashed'}`}>
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 p-8">
-                  <div className="space-y-4">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 p-6 sm:p-8">
+                  <div className="space-y-4 flex-1 min-w-0 pr-4">
                     <div className={`p-4 rounded-2xl inline-flex transition-transform group-hover:scale-110 duration-300 ${tool.status === 'active' ? 'bg-primary/10' : 'bg-muted'}`}>
                       {tool.icon}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <CardTitle className="text-2xl font-headline font-bold">{tool.title}</CardTitle>
-                        <Badge variant={tool.status === 'active' ? 'default' : 'outline'} className="font-bold">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CardTitle className="text-2xl font-headline font-black leading-none">{tool.title}</CardTitle>
+                        <Badge variant={tool.status === 'active' ? 'default' : 'outline'} className="font-bold text-[10px] uppercase tracking-wider shrink-0">
                           {tool.badge}
                         </Badge>
                       </div>
-                      <CardDescription className="text-base text-muted-foreground leading-snug pr-8">
+                      <CardDescription className="text-base text-muted-foreground leading-snug">
                         {tool.description}
                       </CardDescription>
                     </div>
                   </div>
                   {tool.status === 'active' && (
-                    <div className="bg-primary/10 p-2 rounded-full transform group-hover:translate-x-2 transition-transform">
+                    <div className="bg-primary/10 p-2 rounded-full transform group-hover:translate-x-2 transition-transform shrink-0">
                       <ArrowRight className="h-5 w-5 text-primary" />
                     </div>
                   )}
