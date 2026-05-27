@@ -18,7 +18,8 @@ import {
   Trash2,
   CheckCircle2,
   PlusCircle,
-  Undo2
+  Undo2,
+  Settings2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
+} from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
@@ -51,6 +59,7 @@ export default function PdfSplitTool() {
   const [isSplitting, setIsSplitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [outputName, setOutputName] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const [thumbnails, setThumbnails] = useState<PageThumbnail[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
@@ -59,13 +68,11 @@ export default function PdfSplitTool() {
 
   useEffect(() => {
     setMounted(true);
-    // Configuración del worker solo en el cliente
     if (typeof window !== 'undefined') {
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
     }
   }, []);
 
-  // Sincronizar selección visual -> campo de texto
   useEffect(() => {
     if (totalPages > 0) {
       const indices = Array.from(selectedPages).sort((a, b) => a - b);
@@ -106,14 +113,9 @@ export default function PdfSplitTool() {
     
     try {
       const arrayBuffer = await file.arrayBuffer();
-      if (arrayBuffer.byteLength === 0) {
-        throw new Error("El archivo PDF está vacío.");
-      }
-
       const loadingTask = pdfjsLib.getDocument({ 
         data: arrayBuffer,
-        useWorkerFetch: true,
-        isEvalSupported: false 
+        useWorkerFetch: true
       });
       
       const pdf = await loadingTask.promise;
@@ -148,7 +150,7 @@ export default function PdfSplitTool() {
       toast({ 
         variant: "destructive", 
         title: "Error", 
-        description: error.message || "No se pudieron generar las vistas previas del PDF." 
+        description: "No se pudieron generar las vistas previas del PDF." 
       });
       setPdfFile(null);
     } finally {
@@ -159,10 +161,6 @@ export default function PdfSplitTool() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
-      if (file.size === 0) {
-        toast({ variant: "destructive", title: "Error", description: "El archivo seleccionado está vacío." });
-        return;
-      }
       setPdfFile(file);
       setOutputName(file.name.replace('.pdf', '') + '-Split');
       generateThumbnails(file);
@@ -186,15 +184,9 @@ export default function PdfSplitTool() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
-      if (file.size === 0) {
-        toast({ variant: "destructive", title: "Error", description: "El archivo soltado está vacío." });
-        return;
-      }
       setPdfFile(file);
       setOutputName(file.name.replace('.pdf', '') + '-Split');
       generateThumbnails(file);
-    } else if (file) {
-      toast({ variant: "destructive", title: "Error", description: t.pdfFormatOnly });
     }
   };
 
@@ -292,6 +284,64 @@ export default function PdfSplitTool() {
 
   if (!mounted) return null;
 
+  const renderSettingsContent = () => (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-emerald-500" />
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.localProcessing}</h3>
+        </div>
+        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+          La extracción se realiza directamente en tu navegador. Tu información nunca viaja a servidores externos.
+        </p>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+            <FileType className="h-3 w-3" /> Rango de Páginas
+          </Label>
+          <Input 
+            placeholder={t.pageRangePlaceholder}
+            value={pageRange}
+            onChange={(e) => {
+              setPageRange(e.target.value);
+              const indices = parsePageRange(e.target.value, totalPages);
+              setSelectedPages(new Set(indices));
+            }}
+            className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
+          />
+          <p className="text-[8px] text-slate-400 font-bold uppercase">Usa el mouse para seleccionar páginas o escribe aquí.</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+            {t.outputFileName}
+          </Label>
+          <Input 
+            placeholder={t.outputFileNamePlaceholder}
+            value={outputName}
+            onChange={(e) => setOutputName(e.target.value)}
+            className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
+          />
+        </div>
+
+        <div className="bg-rose-50 p-5 rounded-[2rem] border border-rose-100 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas a extraer</span>
+            <span className="text-xs font-black text-rose-600">{selectedPages.size}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas totales</span>
+            <span className="text-xs font-black text-slate-700">{totalPages}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-body overflow-hidden">
       <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
@@ -350,18 +400,18 @@ export default function PdfSplitTool() {
                       <FileText className="h-8 w-8 text-rose-500" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-black text-slate-800 truncate max-w-[300px]">{pdfFile.name}</h4>
+                      <h4 className="text-lg font-black text-slate-800 truncate max-w-[200px] sm:max-w-[300px]">{pdfFile.name}</h4>
                       <p className="text-xs font-bold text-slate-400 uppercase">
                         {totalPages} Páginas • {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 w-full md:w-auto">
-                    <Button variant="outline" size="sm" className="rounded-xl font-bold h-10 px-4 text-xs" onClick={selectAll}>
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-rose-500" /> Seleccionar Todo
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none rounded-xl font-bold h-10 px-4 text-[10px] sm:text-xs" onClick={selectAll}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1 sm:mr-2 text-rose-500" /> <span className="hidden xs:inline">Seleccionar Todo</span><span className="xs:hidden">Todo</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="rounded-xl font-bold h-10 px-4 text-xs" onClick={deselectAll}>
-                      <Undo2 className="h-3.5 w-3.5 mr-2 text-slate-400" /> Limpiar
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none rounded-xl font-bold h-10 px-4 text-[10px] sm:text-xs" onClick={deselectAll}>
+                      <Undo2 className="h-3.5 w-3.5 mr-1 sm:mr-2 text-slate-400" /> <span className="hidden xs:inline">Limpiar</span><span className="xs:hidden">Nada</span>
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -417,20 +467,6 @@ export default function PdfSplitTool() {
                               Pág. {thumb.index + 1}
                             </div>
                           </div>
-                          
-                          <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <Button 
-                              size="icon" 
-                              variant={isSelected ? "destructive" : "secondary"}
-                              className="h-7 w-7 rounded-lg shadow-xl"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePageSelection(thumb.index);
-                              }}
-                            >
-                              {isSelected ? <Trash2 className="h-3.5 w-3.5" /> : <PlusCircle className="h-3.5 w-3.5" />}
-                            </Button>
-                          </div>
                         </div>
                       );
                     })}
@@ -441,63 +477,10 @@ export default function PdfSplitTool() {
           </div>
         </div>
 
+        {/* Action Sidebar - Desktop Only */}
         <aside className="hidden lg:flex w-80 bg-white border-l border-border flex-col shrink-0 shadow-2xl z-20">
-          <div className="flex-1 overflow-y-auto p-8 space-y-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.localProcessing}</h3>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                La extracción se realiza directamente en tu navegador. Tu información nunca viaja a servidores externos.
-              </p>
-            </div>
-
-            <Separator />
-
-            {pdfFile && (
-              <div className="space-y-6 animate-in slide-in-from-right-10">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
-                    <FileType className="h-3 w-3" /> Rango de Páginas
-                  </Label>
-                  <Input 
-                    placeholder={t.pageRangePlaceholder}
-                    value={pageRange}
-                    onChange={(e) => {
-                      setPageRange(e.target.value);
-                      const indices = parsePageRange(e.target.value, totalPages);
-                      setSelectedPages(new Set(indices));
-                    }}
-                    className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
-                  />
-                  <p className="text-[8px] text-slate-400 font-bold uppercase">Usa el mouse para seleccionar páginas o escribe aquí.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                    {t.outputFileName}
-                  </Label>
-                  <Input 
-                    placeholder={t.outputFileNamePlaceholder}
-                    value={outputName}
-                    onChange={(e) => setOutputName(e.target.value)}
-                    className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
-                  />
-                </div>
-
-                <div className="bg-rose-50 p-5 rounded-[2rem] border border-rose-100 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas a extraer</span>
-                    <span className="text-xs font-black text-rose-600">{selectedPages.size}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas totales</span>
-                    <span className="text-xs font-black text-slate-700">{totalPages}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto p-8">
+            {renderSettingsContent()}
           </div>
 
           <div className="p-8 border-t bg-slate-50/50">
@@ -512,22 +495,44 @@ export default function PdfSplitTool() {
           </div>
         </aside>
 
-        {pdfFile && selectedPages.size > 0 && (
-          <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[100] animate-in slide-in-from-bottom-10 flex flex-col gap-2">
-            <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-rose-100 shadow-2xl flex items-center justify-between">
+        {/* Mobile Fixed Action Bar and Settings Toggle */}
+        {pdfFile && (
+          <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[100] animate-in slide-in-from-bottom-10 flex gap-3 pointer-events-auto">
+            <div className="flex-1 bg-white/90 backdrop-blur-md p-2 rounded-2xl border border-rose-100 shadow-2xl flex items-center justify-between">
               <div className="px-3">
                 <span className="text-[10px] font-black text-slate-400 uppercase block">Extraer</span>
-                <span className="text-sm font-black text-rose-600">{selectedPages.size} páginas</span>
+                <span className="text-sm font-black text-rose-600">{selectedPages.size} págs.</span>
               </div>
               <Button 
-                className="h-12 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl px-6 uppercase tracking-widest text-xs gap-2"
+                className="h-11 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl px-6 uppercase tracking-widest text-xs gap-2"
                 onClick={splitPdf}
-                disabled={isSplitting}
+                disabled={selectedPages.size === 0 || isSplitting}
               >
                 {isSplitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 {isSplitting ? "..." : "Separar"}
               </Button>
             </div>
+            
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <Button 
+                size="icon" 
+                className="h-14 w-14 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-white"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+              >
+                <Settings2 className="h-6 w-6" />
+              </Button>
+              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-6 bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Ajustes de PDF</SheetTitle>
+                  <SheetDescription>Configura el rango y nombre de archivo</SheetDescription>
+                </SheetHeader>
+                {renderSettingsContent()}
+              </SheetContent>
+            </Sheet>
           </div>
         )}
       </main>
