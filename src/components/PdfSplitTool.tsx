@@ -1,23 +1,19 @@
-
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
   ChevronLeft, 
   Scissors, 
   Loader2, 
-  X,
   ShieldCheck,
   Zap,
   FileText,
   Download,
-  AlertCircle,
   FileType,
   Trash2,
   CheckCircle2,
-  PlusCircle,
   Undo2,
   Settings2
 } from "lucide-react";
@@ -41,6 +37,7 @@ import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface PageThumbnail {
   index: number;
@@ -68,10 +65,13 @@ export default function PdfSplitTool() {
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== 'undefined') {
+  }, []);
+
+  useEffect(() => {
+    if (mounted && typeof window !== 'undefined') {
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
     }
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     if (totalPages > 0) {
@@ -289,9 +289,9 @@ export default function PdfSplitTool() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-emerald-500" />
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.localProcessing}</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t.localProcessing}</h3>
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+        <p className="text-xs text-muted-foreground leading-relaxed font-medium">
           La extracción se realiza directamente en tu navegador. Tu información nunca viaja a servidores externos.
         </p>
       </div>
@@ -300,7 +300,7 @@ export default function PdfSplitTool() {
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
             <FileType className="h-3 w-3" /> Rango de Páginas
           </Label>
           <Input 
@@ -313,11 +313,11 @@ export default function PdfSplitTool() {
             }}
             className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
           />
-          <p className="text-[8px] text-slate-400 font-bold uppercase">Usa el mouse para seleccionar páginas o escribe aquí.</p>
+          <p className="text-[8px] text-muted-foreground font-bold uppercase">Usa el mouse para seleccionar páginas o escribe aquí.</p>
         </div>
 
         <div className="space-y-2">
-          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
             {t.outputFileName}
           </Label>
           <Input 
@@ -328,14 +328,14 @@ export default function PdfSplitTool() {
           />
         </div>
 
-        <div className="bg-rose-50 p-5 rounded-[2rem] border border-rose-100 space-y-3">
+        <div className="bg-rose-50 dark:bg-rose-500/10 p-5 rounded-[2rem] border border-rose-100 dark:border-rose-500/20 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas a extraer</span>
             <span className="text-xs font-black text-rose-600">{selectedPages.size}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas totales</span>
-            <span className="text-xs font-black text-slate-700">{totalPages}</span>
+            <span className="text-xs font-black text-foreground">{totalPages}</span>
           </div>
         </div>
       </div>
@@ -343,8 +343,8 @@ export default function PdfSplitTool() {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-body overflow-hidden">
-      <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
+    <div className="flex flex-col h-screen bg-background font-body overflow-hidden transition-colors duration-300">
+      <header className="h-16 shrink-0 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-6 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary px-2">
@@ -353,17 +353,20 @@ export default function PdfSplitTool() {
             </Button>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 relative rounded-lg overflow-hidden border">
+            <div className="w-8 h-8 relative rounded-lg overflow-hidden border bg-white dark:bg-slate-200">
               <Image src={logo} alt="Logo" fill className="object-contain" />
             </div>
             <h1 className="text-xl font-headline font-black tracking-tighter text-rose-600 uppercase">{t.splitTitle}</h1>
           </div>
         </div>
-        <LanguageSelector language={lang} setLanguage={setLang} />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageSelector language={lang} setLanguage={setLang} />
+        </div>
       </header>
 
       <main className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50 flex flex-col items-center">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-muted/30 flex flex-col items-center">
           <div className="w-full max-w-6xl space-y-6">
             {!pdfFile ? (
               <div className="max-w-2xl mx-auto w-full pt-12">
@@ -371,7 +374,7 @@ export default function PdfSplitTool() {
                   <Badge className="bg-rose-500/10 text-rose-600 border-rose-200 hover:bg-rose-200/20 font-black px-3 py-1">
                     <Zap className="h-3 w-3 mr-2" /> {t.localProcessing}
                   </Badge>
-                  <h2 className="text-3xl font-headline font-black tracking-tighter text-slate-900 uppercase">
+                  <h2 className="text-3xl font-headline font-black tracking-tighter text-foreground uppercase">
                     {t.splitSubtitle}
                   </h2>
                 </div>
@@ -381,27 +384,27 @@ export default function PdfSplitTool() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   className={cn(
-                    "w-full aspect-video min-h-[300px] bg-white border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-all group shadow-xl",
-                    isDragging ? "border-rose-500 bg-rose-50/50 scale-[1.02]" : "border-rose-100 hover:border-rose-300"
+                    "w-full aspect-video min-h-[300px] bg-card border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-all group shadow-xl",
+                    isDragging ? "border-rose-500 bg-rose-500/10 scale-[1.02]" : "border-border hover:border-rose-300"
                   )}
                 >
-                  <div className="p-8 bg-rose-50 rounded-full group-hover:scale-110 transition-transform">
+                  <div className="p-8 bg-rose-50 dark:bg-rose-500/10 rounded-full group-hover:scale-110 transition-transform">
                     <Scissors className="h-16 w-16 text-rose-500" />
                   </div>
-                  <h3 className="mt-6 text-xl font-headline font-black text-slate-800 uppercase tracking-tight">Seleccionar PDF</h3>
-                  <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
+                  <h3 className="mt-6 text-xl font-headline font-black text-foreground uppercase tracking-tight">Seleccionar PDF</h3>
+                  <p className="mt-2 text-muted-foreground font-medium">{t.dragDrop}</p>
                 </div>
               </div>
             ) : (
               <div className="animate-in fade-in duration-500 pb-32">
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-8 bg-white p-6 rounded-[2rem] border border-rose-100 shadow-sm">
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-8 bg-card p-6 rounded-[2rem] border border-border shadow-sm">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-rose-50 rounded-2xl">
+                    <div className="p-3 bg-rose-50 dark:bg-rose-500/20 rounded-2xl">
                       <FileText className="h-8 w-8 text-rose-500" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-black text-slate-800 truncate max-w-[200px] sm:max-w-[300px]">{pdfFile.name}</h4>
-                      <p className="text-xs font-bold text-slate-400 uppercase">
+                      <h4 className="text-lg font-black text-foreground truncate max-w-[200px] sm:max-w-[300px]">{pdfFile.name}</h4>
+                      <p className="text-xs font-bold text-muted-foreground uppercase">
                         {totalPages} Páginas • {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -416,7 +419,7 @@ export default function PdfSplitTool() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-10 w-10 rounded-xl text-slate-300 hover:text-destructive hover:bg-destructive/10"
+                      className="h-10 w-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setPdfFile(null)}
                     >
                       <Trash2 className="h-5 w-5" />
@@ -441,10 +444,10 @@ export default function PdfSplitTool() {
                           <div 
                             onClick={() => togglePageSelection(thumb.index)}
                             className={cn(
-                              "relative aspect-[3/4] bg-white rounded-xl overflow-hidden cursor-pointer transition-all duration-300 border-4 shadow-sm",
+                              "relative aspect-[3/4] bg-white dark:bg-slate-200 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 border-4 shadow-sm",
                               isSelected 
                                 ? "border-rose-500 ring-4 ring-rose-500/10 scale-[1.02]" 
-                                : "border-white hover:border-rose-200"
+                                : "border-border hover:border-rose-200"
                             )}
                           >
                             <img src={thumb.url} alt={`Página ${thumb.index + 1}`} className="w-full h-full object-cover" />
@@ -462,7 +465,7 @@ export default function PdfSplitTool() {
 
                             <div className={cn(
                               "absolute bottom-2 right-2 px-2 py-0.5 rounded-lg text-[10px] font-black tracking-tighter shadow-sm",
-                              isSelected ? "bg-rose-500 text-white" : "bg-white/90 text-slate-600"
+                              isSelected ? "bg-rose-500 text-white" : "bg-background text-foreground"
                             )}>
                               Pág. {thumb.index + 1}
                             </div>
@@ -477,13 +480,12 @@ export default function PdfSplitTool() {
           </div>
         </div>
 
-        {/* Action Sidebar - Desktop Only */}
-        <aside className="hidden lg:flex w-80 bg-white border-l border-border flex-col shrink-0 shadow-2xl z-20">
+        <aside className="hidden lg:flex w-80 bg-card border-l border-border flex-col shrink-0 shadow-2xl z-20">
           <div className="flex-1 overflow-y-auto p-8">
             {renderSettingsContent()}
           </div>
 
-          <div className="p-8 border-t bg-slate-50/50">
+          <div className="p-8 border-t bg-muted/50">
             <Button 
               className="w-full h-14 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 uppercase tracking-widest text-xs gap-3 transition-all active:scale-95"
               onClick={splitPdf}
@@ -495,12 +497,11 @@ export default function PdfSplitTool() {
           </div>
         </aside>
 
-        {/* Mobile Fixed Action Bar and Settings Toggle */}
         {pdfFile && (
           <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[100] animate-in slide-in-from-bottom-10 flex gap-3 pointer-events-auto">
-            <div className="flex-1 bg-white/90 backdrop-blur-md p-2 rounded-2xl border border-rose-100 shadow-2xl flex items-center justify-between">
+            <div className="flex-1 bg-card/90 backdrop-blur-md p-2 rounded-2xl border border-border shadow-2xl flex items-center justify-between">
               <div className="px-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase block">Extraer</span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase block">Extraer</span>
                 <span className="text-sm font-black text-rose-600">{selectedPages.size} págs.</span>
               </div>
               <Button 
@@ -514,18 +515,15 @@ export default function PdfSplitTool() {
             </div>
             
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <Button 
-                size="icon" 
-                className="h-14 w-14 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-white"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsMenuOpen(!isMenuOpen);
-                }}
-              >
-                <Settings2 className="h-6 w-6" />
-              </Button>
-              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-6 bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
+              <SheetTrigger asChild>
+                <Button 
+                  size="icon" 
+                  className="h-14 w-14 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-white"
+                >
+                  <Settings2 className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-6 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Ajustes de PDF</SheetTitle>
                   <SheetDescription>Configura el rango y nombre de archivo</SheetDescription>

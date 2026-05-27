@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -77,11 +76,10 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-background font-body">
-      {/* Navbar Minimalista y Adaptable */}
+    <div className="min-h-screen bg-background font-body transition-colors duration-300">
       <header className="h-16 border-b border-border flex items-center justify-between px-4 md:px-8 bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 relative overflow-hidden rounded-lg md:rounded-xl shadow-lg shadow-primary/20 bg-white border border-border/10">
+          <div className="w-8 h-8 md:w-10 md:h-10 relative overflow-hidden rounded-lg md:rounded-xl shadow-lg shadow-primary/20 bg-white dark:bg-slate-200 border border-border/10">
             <Image 
               src={logo} 
               alt="MultiPrintTools Logo" 
@@ -103,7 +101,6 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-16">
-        {/* Hero Section */}
         <div className="max-w-3xl mb-10 md:mb-16 space-y-3 md:space-y-4 text-center sm:text-left">
           <Badge variant="secondary" className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border-none">
             {t.heroBadge}
@@ -116,7 +113,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Grid de Herramientas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
           {tools.map((tool) => (
             <Link 
@@ -134,7 +130,7 @@ export default function Home() {
                     </div>
                     <div className="space-y-1.5 md:space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <CardTitle className="text-xl md:text-2xl font-headline font-black leading-tight truncate">{tool.title}</CardTitle>
+                        <CardTitle className="text-xl md:text-2xl font-headline font-black leading-tight truncate text-foreground">{tool.title}</CardTitle>
                         <Badge variant={tool.status === 'active' ? 'default' : 'outline'} className="font-bold text-[9px] md:text-[10px] uppercase tracking-wider shrink-0">
                           {tool.badge}
                         </Badge>
@@ -160,7 +156,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Footer info */}
         <div className="mt-16 md:mt-24 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs md:text-sm text-muted-foreground font-medium text-center md:text-left">{t.footerRights}</p>
           <div className="flex items-center gap-2 text-primary">

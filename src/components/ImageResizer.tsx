@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -32,7 +31,8 @@ import {
   SheetContent, 
   SheetHeader,
   SheetTitle,
-  SheetDescription
+  SheetDescription,
+  SheetTrigger
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function ImageResizer() {
   const [mounted, setMounted] = useState(false);
@@ -174,14 +175,14 @@ export default function ImageResizer() {
     <div className="space-y-2.5">
       <div className="flex items-center gap-2">
         <Settings2 className="h-4 w-4 text-emerald-500" />
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{t.gridSettings}</h2>
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{t.gridSettings}</h2>
       </div>
 
       <div className="space-y-1.5">
         <div className="space-y-0.5">
-          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.units}</Label>
+          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.units}</Label>
           <Select value={unit} onValueChange={(v: any) => setUnit(v)}>
-            <SelectTrigger className="h-8 font-bold border-2 rounded-lg text-xs">
+            <SelectTrigger className="h-8 font-bold border-2 rounded-lg text-xs bg-card">
               <span className="truncate">{unit === 'cm' ? t.unitsCm : t.unitsIn}</span>
             </SelectTrigger>
             <SelectContent>
@@ -193,15 +194,15 @@ export default function ImageResizer() {
 
         <div className="grid grid-cols-1 gap-1.5 relative">
           <div className="space-y-0.5">
-            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.width}</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.width}</Label>
             <div className="relative">
               <Input 
                 type="number" 
                 value={targetWidth} 
                 onChange={(e) => handleWidthChange(e.target.value)}
-                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500"
+                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500 bg-card"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">{unit}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-muted-foreground">{unit}</span>
             </div>
           </div>
 
@@ -210,8 +211,8 @@ export default function ImageResizer() {
               variant="ghost" 
               size="icon" 
               className={cn(
-                "h-6 w-6 rounded-full bg-white border-2 transition-all shadow-sm",
-                lockAspect ? "text-emerald-500 border-emerald-500 scale-105" : "text-slate-300 border-slate-200"
+                "h-6 w-6 rounded-full bg-card border-2 transition-all shadow-sm",
+                lockAspect ? "text-emerald-500 border-emerald-500 scale-105" : "text-muted-foreground border-border"
               )}
               onClick={() => setLockAspect(!lockAspect)}
             >
@@ -220,15 +221,15 @@ export default function ImageResizer() {
           </div>
 
           <div className="space-y-0.5">
-            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.height}</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.height}</Label>
             <div className="relative">
               <Input 
                 type="number" 
                 value={targetHeight} 
                 onChange={(e) => handleHeightChange(e.target.value)}
-                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500"
+                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500 bg-card"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">{unit}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-muted-foreground">{unit}</span>
             </div>
           </div>
         </div>
@@ -236,9 +237,9 @@ export default function ImageResizer() {
         <Separator className="my-0.5 opacity-50" />
 
         <div className="space-y-0.5">
-          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.targetDpi}</Label>
+          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.targetDpi}</Label>
           <Select value={dpi.toString()} onValueChange={(v) => setDpi(parseInt(v))}>
-            <SelectTrigger className="h-8 font-bold border-2 rounded-lg text-xs">
+            <SelectTrigger className="h-8 font-bold border-2 rounded-lg text-xs bg-card">
               <span className="truncate">{dpi} DPI</span>
             </SelectTrigger>
             <SelectContent>
@@ -250,12 +251,12 @@ export default function ImageResizer() {
           </Select>
         </div>
 
-        <div className="p-2 mt-2 rounded-lg bg-emerald-50/50 border border-dashed border-emerald-200">
+        <div className="p-2 mt-2 rounded-lg bg-emerald-500/5 border border-dashed border-emerald-500/30">
           <div className="flex items-center gap-2 mb-0.5">
             <ShieldCheck className="h-3 w-3 text-emerald-600" />
-            <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest">{t.localProcessing}</span>
+            <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">{t.localProcessing}</span>
           </div>
-          <p className="text-[8px] font-medium text-slate-500 leading-tight">
+          <p className="text-[8px] font-medium text-muted-foreground leading-tight">
             {t.privacyNote}
           </p>
         </div>
@@ -275,8 +276,8 @@ export default function ImageResizer() {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-body overflow-hidden">
-      <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
+    <div className="flex flex-col h-screen bg-background font-body overflow-hidden transition-colors duration-300">
+      <header className="h-16 shrink-0 border-b border-border bg-background flex items-center justify-between px-6 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary px-2">
@@ -285,7 +286,7 @@ export default function ImageResizer() {
             </Button>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 relative rounded-lg overflow-hidden border">
+            <div className="w-8 h-8 relative rounded-lg overflow-hidden border bg-white dark:bg-slate-200">
               <Image src={logo} alt="Logo" fill className="object-contain" />
             </div>
             <h1 className="text-xl font-headline font-black tracking-tighter text-emerald-600 uppercase">
@@ -294,15 +295,16 @@ export default function ImageResizer() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <Badge variant="outline" className="hidden lg:flex items-center gap-2 border-emerald-200 bg-emerald-50 text-emerald-700 font-bold px-3 py-1">
+          <Badge variant="outline" className="hidden lg:flex items-center gap-2 border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 font-bold px-3 py-1">
             <Cpu className="h-3 w-3" /> {t.localProcessing}
           </Badge>
+          <ThemeToggle />
           <LanguageSelector language={lang} setLanguage={setLang} />
         </div>
       </header>
 
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto p-4 sm:p-12 bg-slate-100/50 flex flex-col items-center relative">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-12 bg-muted/30 flex flex-col items-center relative">
           {!image ? (
             <div 
               onClick={() => fileInputRef.current?.click()}
@@ -310,15 +312,15 @@ export default function ImageResizer() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={cn(
-                "w-full max-w-xl aspect-square md:aspect-video bg-white border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-all group shadow-xl shadow-emerald-500/5",
-                isDragging ? "border-emerald-500 bg-emerald-50/50 scale-[1.02]" : "border-emerald-100 hover:border-emerald-300"
+                "w-full max-w-xl aspect-square md:aspect-video bg-card border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-all group shadow-xl",
+                isDragging ? "border-emerald-500 bg-emerald-500/10 scale-[1.02]" : "border-border hover:border-emerald-300"
               )}
             >
-              <div className="p-10 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform">
+              <div className="p-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-full group-hover:scale-110 transition-transform">
                 <ImageIcon className="h-20 w-20 text-emerald-500" />
               </div>
-              <h3 className="mt-8 text-2xl font-headline font-black text-slate-800 uppercase tracking-tight">{t.resizerTitle}</h3>
-              <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
+              <h3 className="mt-8 text-2xl font-headline font-black text-foreground uppercase tracking-tight">{t.resizerTitle}</h3>
+              <p className="mt-2 text-muted-foreground font-medium">{t.dragDrop}</p>
               <div className="mt-6 flex items-center gap-2 text-emerald-600/60 font-black text-[10px] uppercase tracking-[0.2em]">
                 <ShieldCheck className="h-4 w-4" /> {t.privacyNote}
               </div>
@@ -326,7 +328,7 @@ export default function ImageResizer() {
             </div>
           ) : (
             <div className="w-full max-w-4xl space-y-8 animate-fade-in pb-32 md:pb-0">
-              <div className="relative group rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white bg-white">
+              <div className="relative group rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-card bg-card">
                 <img 
                   src={image.url} 
                   alt="Preview" 
@@ -348,12 +350,12 @@ export default function ImageResizer() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-[2rem] border border-emerald-50 shadow-lg shadow-emerald-500/5 space-y-2">
+                <div className="bg-card p-6 rounded-[2rem] border border-border shadow-lg shadow-emerald-500/5 space-y-2">
                   <div className="flex items-center gap-2">
                     <Ruler className="h-4 w-4 text-emerald-500" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.originalSize}</span>
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{t.originalSize}</span>
                   </div>
-                  <p className="text-xl font-black text-slate-800">
+                  <p className="text-xl font-black text-foreground">
                     {Math.round(image.width / (dpi/2.54) * 10) / 10} x {Math.round(image.height / (dpi/2.54) * 10) / 10} CM
                   </p>
                 </div>
@@ -366,13 +368,13 @@ export default function ImageResizer() {
                     {finalPixelsW} x {finalPixelsH} PX
                   </p>
                 </div>
-                <div className="bg-white p-6 rounded-[2rem] border border-emerald-50 shadow-lg shadow-emerald-500/5 space-y-2">
+                <div className="bg-card p-6 rounded-[2rem] border border-border shadow-lg shadow-emerald-500/5 space-y-2">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-amber-500" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Densidad</span>
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Densidad</span>
                   </div>
-                  <p className="text-xl font-black text-slate-800">
-                    {megapixels} MP <span className="text-[10px] text-slate-400">EST.</span>
+                  <p className="text-xl font-black text-foreground">
+                    {megapixels} MP <span className="text-[10px] text-muted-foreground">EST.</span>
                   </p>
                 </div>
               </div>
@@ -380,37 +382,32 @@ export default function ImageResizer() {
           )}
         </div>
 
-        {/* Desktop Sidebar with fixed bottom action */}
-        <aside className="hidden md:flex w-72 bg-white border-l border-border flex-col shrink-0 shadow-2xl z-20">
+        <aside className="hidden md:flex w-72 bg-card border-l border-border flex-col shrink-0 shadow-2xl z-20">
           <div className="flex-1 overflow-y-auto p-5 pb-2">
             {renderSettingsContent()}
           </div>
           {image && (
-            <div className="p-5 pt-2 border-t bg-slate-50/50">
+            <div className="p-5 pt-2 border-t bg-muted/50">
               {downloadButton}
             </div>
           )}
         </aside>
 
-        {/* Mobile Fixed Download Bar and Settings Toggle */}
         {image && (
           <div className="md:hidden fixed bottom-6 left-6 right-6 z-[100] flex gap-3 pointer-events-auto">
             <div className="flex-1">
               {downloadButton}
             </div>
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <Button 
-                size="icon" 
-                className="h-11 w-11 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-white"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsMenuOpen(!isMenuOpen);
-                }}
-              >
-                <Settings2 className="h-5 w-5" />
-              </Button>
-              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-5 bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
+              <SheetTrigger asChild>
+                <Button 
+                  size="icon" 
+                  className="h-11 w-11 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-card"
+                >
+                  <Settings2 className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-5 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Configuración</SheetTitle>
                   <SheetDescription>Ajustes de redimensionado de imagen</SheetDescription>
