@@ -34,8 +34,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
 
-// Configuración del worker para PDF.js v4.0+
-// Usamos unpkg y la extensión .mjs para asegurar compatibilidad con módulos ESM
+// Configuración del worker para PDF.js utilizando .mjs para evitar errores de tipo MIME
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 }
@@ -67,6 +66,7 @@ export default function PdfSplitTool() {
     setMounted(true);
   }, []);
 
+  // Sincronizar selección visual -> campo de texto
   useEffect(() => {
     if (totalPages > 0) {
       const indices = Array.from(selectedPages).sort((a, b) => a - b);
@@ -194,6 +194,7 @@ export default function PdfSplitTool() {
     setSelectedPages(new Set());
   };
 
+  // Función para parsear el campo de texto a índices de página
   const parsePageRange = (rangeStr: string, maxPages: number): number[] => {
     const pages = new Set<number>();
     const parts = rangeStr.split(',').map(p => p.trim());
