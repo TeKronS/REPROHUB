@@ -34,11 +34,6 @@ import * as pdfjsLib from "pdfjs-dist";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
 
-// Configuración del worker para PDF.js utilizando .mjs para evitar errores de tipo MIME
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-}
-
 interface PageThumbnail {
   index: number;
   url: string;
@@ -64,6 +59,10 @@ export default function PdfSplitTool() {
 
   useEffect(() => {
     setMounted(true);
+    // Configuración del worker solo en el cliente
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+    }
   }, []);
 
   // Sincronizar selección visual -> campo de texto
@@ -99,13 +98,25 @@ export default function PdfSplitTool() {
   }, [selectedPages, totalPages]);
 
   const generateThumbnails = async (file: File) => {
+    if (!file || file.size === 0) return;
+    
     setIsLoadingPages(true);
     setThumbnails([]);
     setSelectedPages(new Set());
     
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error("El archivo PDF está vacío.");
+      }
+
+      const loadingTask = pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        useWorkerFetch: true,
+        isEvalSupported: false 
+      });
+      
+      const pdf = await loadingTask.promise;
       const numPages = pdf.numPages;
       setTotalPages(numPages);
       
@@ -132,9 +143,14 @@ export default function PdfSplitTool() {
       
       setThumbnails(newThumbnails);
       setSelectedPages(initialSelected);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating thumbnails:", error);
-      toast({ variant: "destructive", title: "Error", description: "No se pudieron generar las vistas previas del PDF." });
+      toast({ 
+        variant: "destructive", 
+        title: "Error", 
+        description: error.message || "No se pudieron generar las vistas previas del PDF." 
+      });
+      setPdfFile(null);
     } finally {
       setIsLoadingPages(false);
     }
@@ -143,6 +159,10 @@ export default function PdfSplitTool() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
+      if (file.size === 0) {
+        toast({ variant: "destructive", title: "Error", description: "El archivo seleccionado está vacío." });
+        return;
+      }
       setPdfFile(file);
       setOutputName(file.name.replace('.pdf', '') + '-Split');
       generateThumbnails(file);
@@ -166,6 +186,10 @@ export default function PdfSplitTool() {
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
+      if (file.size === 0) {
+        toast({ variant: "destructive", title: "Error", description: "El archivo soltado está vacío." });
+        return;
+      }
       setPdfFile(file);
       setOutputName(file.name.replace('.pdf', '') + '-Split');
       generateThumbnails(file);
@@ -194,9 +218,10 @@ export default function PdfSplitTool() {
     setSelectedPages(new Set());
   };
 
-  // Función para parsear el campo de texto a índices de página
   const parsePageRange = (rangeStr: string, maxPages: number): number[] => {
     const pages = new Set<number>();
+    if (!rangeStr.trim()) return [];
+    
     const parts = rangeStr.split(',').map(p => p.trim());
 
     for (const part of parts) {
