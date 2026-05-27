@@ -172,13 +172,13 @@ export default function ImageResizer() {
   const megapixels = Math.round((finalPixelsW * finalPixelsH) / 1000000 * 10) / 10;
 
   const renderSettingsContent = () => (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Settings2 className="h-4 w-4 text-emerald-500" />
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{t.gridSettings}</h2>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-3">
         <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.units}</Label>
           <Select value={unit} onValueChange={(v: any) => setUnit(v)}>
@@ -192,7 +192,7 @@ export default function ImageResizer() {
           </Select>
         </div>
 
-        <div className="grid grid-cols-1 gap-1.5 relative">
+        <div className="flex flex-col gap-2 relative">
           <div className="space-y-0.5">
             <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.width}</Label>
             <div className="relative">
@@ -200,23 +200,24 @@ export default function ImageResizer() {
                 type="number" 
                 value={targetWidth} 
                 onChange={(e) => handleWidthChange(e.target.value)}
-                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500 bg-card"
+                className="h-9 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500 bg-card"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-muted-foreground">{unit}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-muted-foreground uppercase">{unit}</span>
             </div>
           </div>
 
-          <div className="flex justify-center -my-3 z-10">
+          <div className="flex justify-center -my-3.5 z-20">
             <Button 
               variant="ghost" 
               size="icon" 
               className={cn(
-                "h-6 w-6 rounded-full bg-card border-2 transition-all shadow-sm",
-                lockAspect ? "text-emerald-500 border-emerald-500 scale-105" : "text-muted-foreground border-border"
+                "h-7 w-7 rounded-full bg-card border-2 transition-all shadow-md active:scale-95",
+                lockAspect ? "text-emerald-500 border-emerald-500 scale-110" : "text-muted-foreground border-border"
               )}
               onClick={() => setLockAspect(!lockAspect)}
+              title={t.keepAspectRatio}
             >
-              {lockAspect ? <LinkIcon className="h-2.5 w-2.5" /> : <Link2Off className="h-2.5 w-2.5" />}
+              {lockAspect ? <LinkIcon className="h-3 w-3" /> : <Link2Off className="h-3 w-3" />}
             </Button>
           </div>
 
@@ -227,14 +228,14 @@ export default function ImageResizer() {
                 type="number" 
                 value={targetHeight} 
                 onChange={(e) => handleHeightChange(e.target.value)}
-                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500 bg-card"
+                className="h-9 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500 bg-card"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-muted-foreground">{unit}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-muted-foreground uppercase">{unit}</span>
             </div>
           </div>
         </div>
 
-        <Separator className="my-0.5 opacity-50" />
+        <Separator className="my-1 opacity-50" />
 
         <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.targetDpi}</Label>
@@ -251,12 +252,12 @@ export default function ImageResizer() {
           </Select>
         </div>
 
-        <div className="p-2 mt-2 rounded-lg bg-emerald-500/5 border border-dashed border-emerald-500/30">
-          <div className="flex items-center gap-2 mb-0.5">
-            <ShieldCheck className="h-3 w-3 text-emerald-600" />
+        <div className="p-2.5 mt-2 rounded-xl bg-emerald-500/5 border border-dashed border-emerald-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
             <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">{t.localProcessing}</span>
           </div>
-          <p className="text-[8px] font-medium text-muted-foreground leading-tight">
+          <p className="text-[9px] font-medium text-muted-foreground leading-tight">
             {t.privacyNote}
           </p>
         </div>
