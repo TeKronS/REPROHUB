@@ -384,9 +384,6 @@ export default function ImageResizer() {
                   <SheetDescription>Ajustes de redimensionado de imagen</SheetDescription>
                 </SheetHeader>
                 {renderSettingsContent()}
-                <div className="mt-6">
-                  {downloadButton}
-                </div>
               </SheetContent>
             </Sheet>
           </div>
