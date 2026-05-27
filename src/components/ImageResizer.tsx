@@ -399,14 +399,17 @@ export default function ImageResizer() {
               {downloadButton}
             </div>
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  size="icon" 
-                  className="h-11 w-11 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-card"
-                >
-                  <Settings2 className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
+              <Button 
+                size="icon" 
+                className="h-11 w-11 shrink-0 rounded-full shadow-2xl bg-slate-800 text-white hover:bg-slate-900 transition-all active:scale-95 border-4 border-card"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+              >
+                <Settings2 className="h-5 w-5" />
+              </Button>
               <SheetContent side="right" className="w-[85%] sm:w-[350px] p-5 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Configuración</SheetTitle>
