@@ -7,6 +7,7 @@ import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUploader } from "./ImageUploader";
 import { MuralCanvas } from "./MuralCanvas";
+import { ThemeToggle } from "./ThemeToggle";
 import { 
   Settings2, 
   Layout, 
@@ -517,14 +518,14 @@ export default function MuralisEditor() {
     <div className={cn("space-y-4", isMobile ? "p-4 pt-1" : "p-4")}>
       {!isMobile && (
         <div className="flex items-center justify-between">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-white px-2 py-1 rounded-md shadow-sm border border-border/20">
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 bg-card px-2 py-1 rounded-md shadow-sm border border-border/20">
             <Settings2 className="h-3 v-3" /> {t.gridSettings}
           </h2>
         </div>
       )}
 
       <div className="space-y-4">
-        <div className="bg-white p-4 rounded-xl border border-primary/10 shadow-sm space-y-3">
+        <div className="bg-card p-4 rounded-xl border border-primary/10 shadow-sm space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <Maximize2 className="h-3.5 w-3.5 text-primary" />
             <Label className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{t.finalMeasures}</Label>
@@ -564,8 +565,8 @@ export default function MuralisEditor() {
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.rows}</Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentRows}</span>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.rows}</Label>
+            <span className="text-xs font-black text-primary bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentRows}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => handleRowsGridChange(Math.max(1, currentRows - 1), !!isMobile)}>
@@ -587,8 +588,8 @@ export default function MuralisEditor() {
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.columns}</Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentCols}</span>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{t.columns}</Label>
+            <span className="text-xs font-black text-primary bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentCols}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => handleColsGridChange(Math.max(1, currentCols - 1), !!isMobile)}>
@@ -608,11 +609,11 @@ export default function MuralisEditor() {
           </div>
         </div>
 
-        <Separator className="bg-white/40" />
+        <Separator className="bg-border/40" />
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.paperSize}</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.paperSize}</Label>
             <Select value={currentPaperSize} onValueChange={(v) => {
               if (isMobile) setDraftPaperSize(v); else setPaperSize(v);
               const curWVal = isMobile ? draftTargetWidth : targetWidth;
@@ -624,7 +625,7 @@ export default function MuralisEditor() {
                 setRows(opt.rows); setCols(opt.cols); setOrientation(opt.orientation);
               }
             }}>
-              <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
+              <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-card shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectContent>
                 {Object.keys(PAPER_DIMENSIONS).map(key => <SelectItem key={key} value={key} className="text-xs font-bold">{key}</SelectItem>)}
               </SelectContent>
@@ -632,7 +633,7 @@ export default function MuralisEditor() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.orientation}</Label>
+            <Label className="text-[10px] font-black uppercase text-muted-foreground bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10 mb-0.5 inline-block">{t.orientation}</Label>
             <Select value={currentOrientation} onValueChange={(v: any) => {
               if (isMobile) setDraftOrientation(v); else setOrientation(v);
               const curWVal = isMobile ? draftTargetWidth : targetWidth;
@@ -644,7 +645,7 @@ export default function MuralisEditor() {
                 setRows(opt.rows); setCols(opt.cols);
               }
             }}>
-              <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-white shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
+              <SelectTriggerUI className="h-8 rounded-lg text-xs font-bold bg-card shadow-sm border border-border/10"><SelectValue /></SelectTriggerUI>
               <SelectContent>
                 <SelectItem value="portrait" className="text-xs font-bold">{t.portrait}</SelectItem>
                 <SelectItem value="landscape" className="text-xs font-bold">{t.landscape}</SelectItem>
@@ -655,10 +656,10 @@ export default function MuralisEditor() {
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Scissors className="h-3 w-3" /> {t.overlap}
             </Label>
-            <span className="text-xs font-black text-accent bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentOverlap} cm</span>
+            <span className="text-xs font-black text-accent bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentOverlap} cm</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-accent/10 hover:text-accent" onClick={() => {
@@ -683,10 +684,10 @@ export default function MuralisEditor() {
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Maximize className="h-3 w-3" /> {t.marginsVertical}
             </Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginV} cm</span>
+            <span className="text-xs font-black text-primary bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginV} cm</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
@@ -711,10 +712,10 @@ export default function MuralisEditor() {
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">
               <Maximize className="h-3 w-3" /> {t.marginsHorizontal}
             </Label>
-            <span className="text-xs font-black text-primary bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginH} cm</span>
+            <span className="text-xs font-black text-primary bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10">{currentMarginH} cm</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-primary/10 hover:text-primary" onClick={() => {
@@ -738,13 +739,13 @@ export default function MuralisEditor() {
         </div>
 
         <div className="flex items-center justify-between pt-0.5">
-          <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer bg-white px-2 py-0.5 rounded-md shadow-sm border border-border/10" htmlFor={isMobile ? "draft-guides" : "guides"}>{t.guides}</Label>
-          <Switch id={isMobile ? "draft-guides" : "guides"} checked={currentShowGuides} onCheckedChange={isMobile ? setDraftShowGuides : setShowGuides} className="bg-white/50" />
+          <Label className="text-[10px] font-black uppercase text-muted-foreground cursor-pointer bg-card px-2 py-0.5 rounded-md shadow-sm border border-border/10" htmlFor={isMobile ? "draft-guides" : "guides"}>{t.guides}</Label>
+          <Switch id={isMobile ? "draft-guides" : "guides"} checked={currentShowGuides} onCheckedChange={isMobile ? setDraftShowGuides : setShowGuides} className="bg-muted" />
         </div>
       </div>
 
       {info && (
-        <div className="p-3 bg-white/90 rounded-xl border border-white/40 shadow-xl space-y-2">
+        <div className="p-3 bg-card/90 rounded-xl border border-border shadow-xl space-y-2">
           <div className="flex items-center gap-2 mb-0.5">
             <Ruler className="h-3 w-3 text-muted-foreground" />
             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{lang === 'es' ? 'Resumen Técnico' : 'Technical Summary'}</span>
@@ -774,8 +775,8 @@ export default function MuralisEditor() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col min-h-svh w-full font-body bg-white text-foreground overflow-x-hidden">
-      <header className="h-14 lg:h-16 border-b border-border bg-white flex items-center justify-between px-4 lg:px-6 z-50 shadow-sm shrink-0 sticky top-0">
+    <div className="flex flex-col min-h-svh w-full font-body bg-background text-foreground overflow-x-hidden">
+      <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50 shadow-sm shrink-0 sticky top-0">
         <div className="flex items-center gap-2 lg:gap-6">
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary px-2">
@@ -799,6 +800,7 @@ export default function MuralisEditor() {
           <Separator orientation="vertical" className="h-8 hidden lg:block" />
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
+          <ThemeToggle />
           <LanguageSelector language={lang} setLanguage={setLang} />
           <Button className="hidden lg:flex bg-primary hover:bg-primary/90 text-white font-black gap-2 h-10 px-6 rounded-xl shadow-md transition-all active:scale-95 text-xs" onClick={handleExport} disabled={!image || isExporting}>
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
@@ -809,7 +811,7 @@ export default function MuralisEditor() {
 
       <main className="flex-1 flex overflow-hidden relative">
         <section className={cn(
-          "flex-1 relative bg-[#f8f9fa] flex flex-col items-center overflow-y-auto lg:overflow-hidden",
+          "flex-1 relative bg-muted/30 flex flex-col items-center overflow-y-auto lg:overflow-hidden",
           !image ? "justify-start py-8" : "justify-start"
         )}>
           {!image ? (
@@ -826,7 +828,7 @@ export default function MuralisEditor() {
             <>
               {physicalInfo && (
                 <div className="absolute top-4 lg:top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-5xl px-4 lg:px-8">
-                  <div className="bg-white/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-4 lg:px-6 py-2 lg:py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
+                  <div className="bg-background/80 backdrop-blur-xl border border-primary/20 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] px-4 lg:px-6 py-2 lg:py-3 rounded-2xl flex items-center justify-between pointer-events-auto animate-fade-in">
                     <div className="flex items-center gap-3 lg:gap-6">
                       <div className="flex flex-col">
                         <span className="text-[6px] lg:text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">{t.finalMeasures}</span>
@@ -896,7 +898,7 @@ export default function MuralisEditor() {
           )}
         </section>
 
-        <aside className="hidden lg:block w-80 border-l border-border bg-white/80 backdrop-blur-xl overflow-y-auto shadow-xl z-10">
+        <aside className="hidden lg:block w-80 border-l border-border bg-background overflow-y-auto shadow-xl z-10">
           {renderSettings(
             rows, 
             cols, 
@@ -926,7 +928,7 @@ export default function MuralisEditor() {
             >
               <Settings2 className="h-6 w-6" />
             </Button>
-            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-white/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
+            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-background/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
               <SheetHeader className="sr-only">
                 <SheetTitle>{t.gridSettings}</SheetTitle>
                 <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>

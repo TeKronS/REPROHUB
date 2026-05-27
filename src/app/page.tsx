@@ -17,6 +17,7 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Language, translations } from "@/lib/translations";
 import logo from "./icono.png";
 
@@ -76,9 +77,9 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-white font-body">
+    <div className="min-h-screen bg-background font-body">
       {/* Navbar Minimalista y Adaptable */}
-      <header className="h-16 md:h-20 border-b border-border flex items-center justify-between px-4 md:px-8 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="h-16 border-b border-border flex items-center justify-between px-4 md:px-8 bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-2 md:gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 relative overflow-hidden rounded-lg md:rounded-xl shadow-lg shadow-primary/20 bg-white border border-border/10">
             <Image 
@@ -92,7 +93,8 @@ export default function Home() {
             MultiPrint<span className="text-primary">Tools</span>
           </span>
         </div>
-        <div className="flex items-center gap-3 md:gap-6">
+        <div className="flex items-center gap-2 md:gap-4">
+          <ThemeToggle />
           <LanguageSelector language={lang} setLanguage={setLang} />
           <Link href="#" className="hidden sm:block text-xs md:text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
             {t.support}
@@ -122,7 +124,7 @@ export default function Home() {
               href={tool.href}
               className={tool.status === 'coming-soon' ? 'pointer-events-none' : ''}
             >
-              <Card className={`group relative h-full transition-all duration-300 border-2 ${tool.status === 'active' ? 'hover:border-primary hover:shadow-2xl hover:shadow-primary/10 cursor-pointer' : 'opacity-60 bg-muted/30 border-dashed'}`}>
+              <Card className={`group relative h-full transition-all duration-300 border-2 bg-card ${tool.status === 'active' ? 'hover:border-primary hover:shadow-2xl hover:shadow-primary/10 cursor-pointer' : 'opacity-60 bg-muted/30 border-dashed'}`}>
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 p-5 md:p-8">
                   <div className="space-y-3 md:space-y-4 flex-1 min-w-0 pr-4">
                     <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl inline-flex transition-transform group-hover:scale-110 duration-300 ${tool.status === 'active' ? 'bg-primary/10' : 'bg-muted'}`}>
