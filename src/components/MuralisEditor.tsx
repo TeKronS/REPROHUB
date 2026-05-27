@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
@@ -779,7 +778,7 @@ export default function MuralisEditor() {
       <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50 shadow-sm shrink-0 sticky top-0">
         <div className="flex items-center gap-2 lg:gap-6">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary px-2">
+            <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground px-2">
               <ChevronLeft className="h-4 w-4" /> 
               <span className="hidden lg:inline">Inicio</span>
             </Button>

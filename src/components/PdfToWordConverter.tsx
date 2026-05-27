@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -123,7 +122,7 @@ export default function PdfToWordConverter() {
       <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground hover:text-primary px-2">
+            <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground px-2">
               <ChevronLeft className="h-4 w-4" /> 
               <span className="hidden sm:inline text-xs">Inicio</span>
             </Button>
