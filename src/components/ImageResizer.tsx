@@ -147,14 +147,14 @@ export default function ImageResizer() {
   const megapixels = Math.round((finalPixelsW * finalPixelsH) / 1000000 * 10) / 10;
 
   const renderSettingsContent = () => (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <div className="flex items-center gap-2">
         <Settings2 className="h-4 w-4 text-emerald-500" />
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{t.gridSettings}</h2>
       </div>
 
-      <div className="space-y-2">
-        <div className="space-y-1">
+      <div className="space-y-1.5">
+        <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.units}</Label>
           <Select value={unit} onValueChange={(v: any) => setUnit(v)}>
             <SelectTrigger className="h-8 font-bold border-2 rounded-lg text-xs">
@@ -167,51 +167,51 @@ export default function ImageResizer() {
           </Select>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 relative">
-          <div className="space-y-1">
+        <div className="grid grid-cols-1 gap-1.5 relative">
+          <div className="space-y-0.5">
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.width}</Label>
             <div className="relative">
               <Input 
                 type="number" 
                 value={targetWidth} 
                 onChange={(e) => handleWidthChange(e.target.value)}
-                className="h-9 font-black text-base rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500"
+                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">{unit}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">{unit}</span>
             </div>
           </div>
 
-          <div className="flex justify-center -my-2 z-10">
+          <div className="flex justify-center -my-3 z-10">
             <Button 
               variant="ghost" 
               size="icon" 
               className={cn(
                 "h-6 w-6 rounded-full bg-white border-2 transition-all shadow-sm",
-                lockAspect ? "text-emerald-500 border-emerald-500 scale-110" : "text-slate-300 border-slate-200"
+                lockAspect ? "text-emerald-500 border-emerald-500 scale-105" : "text-slate-300 border-slate-200"
               )}
               onClick={() => setLockAspect(!lockAspect)}
             >
-              {lockAspect ? <LinkIcon className="h-3 w-3" /> : <Link2Off className="h-3 w-3" />}
+              {lockAspect ? <LinkIcon className="h-2.5 w-2.5" /> : <Link2Off className="h-2.5 w-2.5" />}
             </Button>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.height}</Label>
             <div className="relative">
               <Input 
                 type="number" 
                 value={targetHeight} 
                 onChange={(e) => handleHeightChange(e.target.value)}
-                className="h-9 font-black text-base rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500"
+                className="h-8 font-black text-sm rounded-lg border-2 pl-3 pr-10 text-emerald-600 focus-visible:ring-emerald-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">{unit}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">{unit}</span>
             </div>
           </div>
         </div>
 
-        <Separator className="my-1 opacity-50" />
+        <Separator className="my-0.5 opacity-50" />
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.targetDpi}</Label>
           <Select value={dpi.toString()} onValueChange={(v) => setDpi(parseInt(v))}>
             <SelectTrigger className="h-8 font-bold border-2 rounded-lg text-xs">
@@ -228,7 +228,7 @@ export default function ImageResizer() {
 
         <div className="pt-2">
           <Button 
-            className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-500/20 text-sm gap-3 transition-all active:scale-95"
+            className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-500/20 text-xs gap-3 transition-all active:scale-95"
             onClick={startResizing}
             disabled={!image || isResizing}
           >
@@ -360,7 +360,11 @@ export default function ImageResizer() {
               <Button 
                 size="icon" 
                 className="h-14 w-14 rounded-full shadow-2xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all active:scale-95 border-4 border-white"
-                onClick={() => setIsMenuOpen(true)}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
               >
                 <Settings2 className="h-6 w-6" />
               </Button>
