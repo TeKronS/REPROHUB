@@ -101,7 +101,16 @@ export const translations = {
     remove: 'Remove',
     mergeAction: 'Merge Files',
     outputFileName: 'Output Filename',
-    outputFileNamePlaceholder: 'Final file name...'
+    outputFileNamePlaceholder: 'Final file name...',
+    // PDF Split
+    splitTitle: 'Split PDF',
+    splitDesc: 'Extract specific pages from a PDF document into a new file quickly.',
+    splitSubtitle: 'Split PDF Pages',
+    pageRange: 'Page Range',
+    pageRangePlaceholder: 'e.g. 1, 3-5, 8',
+    splitAction: 'Extract Pages',
+    splitting: 'Extracting...',
+    invalidRange: 'Please enter a valid page range.'
   },
   es: {
     title: 'MURALIS',
@@ -202,6 +211,15 @@ export const translations = {
     remove: 'Eliminar',
     mergeAction: 'Combinar Archivos',
     outputFileName: 'Nombre del Archivo Final',
-    outputFileNamePlaceholder: 'Nombre del archivo...'
+    outputFileNamePlaceholder: 'Nombre del archivo...',
+    // PDF Split
+    splitTitle: 'Separar PDF',
+    splitDesc: 'Extrae páginas específicas de un documento PDF en un nuevo archivo de forma rápida.',
+    splitSubtitle: 'Separar Páginas de PDF',
+    pageRange: 'Rango de Páginas',
+    pageRangePlaceholder: 'Ej: 1, 3-5, 8',
+    splitAction: 'Extraer Páginas',
+    splitting: 'Extrayendo...',
+    invalidRange: 'Por favor ingresa un rango de páginas válido.'
   }
 };

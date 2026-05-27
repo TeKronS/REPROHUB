@@ -6,15 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { 
   Layers, 
-  FileStack, 
-  Image as ImageIcon, 
-  Calculator, 
   ArrowRight,
   Sparkles,
   FileText,
   FileType,
   Maximize,
-  Copy
+  Copy,
+  Scissors
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,10 +42,18 @@ export default function Home() {
       badge: t.popular
     },
     {
-      title: t.pdfMasterTitle,
+      title: t.mergeTitle,
       description: t.pdfMasterDesc,
       icon: <Copy className="h-8 w-8 text-indigo-500" />,
       href: "/pdf-merge",
+      status: "active",
+      badge: "PRO"
+    },
+    {
+      title: t.splitTitle,
+      description: t.splitDesc,
+      icon: <Scissors className="h-8 w-8 text-rose-500" />,
+      href: "/pdf-split",
       status: "active",
       badge: "PRO"
     },
