@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Smartphone,
-  Monitor
+  Monitor,
+  ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -75,6 +76,7 @@ export default function ImageToPdfConverter() {
   const [imagesPerPage, setImagesPerPage] = useState('1');
   const [isExporting, setIsExporting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -92,21 +94,49 @@ export default function ImageToPdfConverter() {
     return list;
   }, [images]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const processFiles = (files: FileList | File[]) => {
+    const newImages: ImageData[] = Array.from(files)
+      .filter(file => file.type.startsWith('image/'))
+      .map(file => ({
+        id: Math.random().toString(36).substring(2, 9),
+        url: URL.createObjectURL(file),
+        file,
+        name: file.name,
+        quantity: 1,
+        orientation: orientation 
+      }));
 
-    const newImages: ImageData[] = Array.from(files).map(file => ({
-      id: Math.random().toString(36).substring(2, 9),
-      url: URL.createObjectURL(file),
-      file,
-      name: file.name,
-      quantity: 1,
-      orientation: orientation 
-    }));
+    if (newImages.length === 0) {
+      toast({ variant: "destructive", title: "Error", description: "Por favor selecciona archivos de imagen válidos." });
+      return;
+    }
 
     setImages(prev => [...prev, ...newImages]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processFiles(e.target.files);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files) {
+      processFiles(e.dataTransfer.files);
+    }
   };
 
   const removeImage = (id: string) => {
@@ -420,12 +450,18 @@ export default function ImageToPdfConverter() {
               <div className="flex items-center justify-center h-full min-h-[150px] w-full">
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center min-h-[150px] max-h-full h-full w-full border-4 border-dashed rounded-3xl border-primary/20 hover:border-primary/40 hover:bg-white transition-all cursor-pointer group bg-white/50"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "flex flex-col items-center justify-center min-h-[300px] h-full w-full border-4 border-dashed rounded-[3rem] transition-all cursor-pointer group bg-white shadow-xl",
+                    isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-primary/20 hover:border-primary/40 hover:bg-white"
+                  )}
                 >
-                  <div className="p-6 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
-                    <Plus className="h-12 w-12 text-primary" />
+                  <div className="p-8 bg-primary/10 rounded-full group-hover:scale-110 transition-transform">
+                    <ImageIcon className="h-16 w-16 text-primary" />
                   </div>
-                  <h3 className="mt-6 text-2xl font-headline font-black text-slate-800 uppercase tracking-tight">{t.imgToPdfTitle}</h3>
+                  <h3 className="mt-8 text-2xl font-headline font-black text-slate-800 uppercase tracking-tight">{t.imgToPdfTitle}</h3>
                   <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
                   <input 
                     type="file" 
