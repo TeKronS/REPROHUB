@@ -30,8 +30,7 @@ import {
   SheetContent, 
   SheetHeader,
   SheetTitle,
-  SheetDescription,
-  SheetTrigger
+  SheetDescription
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -642,14 +641,17 @@ export default function ImageToPdfConverter() {
 
         <div className="lg:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                size="icon" 
-                className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
-              >
-                <Settings2 className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
+            <Button 
+              size="icon" 
+              className="h-14 w-14 rounded-full shadow-2xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-95 border-4 border-white"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+            >
+              <Settings2 className="h-6 w-6" />
+            </Button>
             <SheetContent side="right" className="w-[85%] sm:w-[350px] p-5 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto">
               <SheetHeader className="sr-only">
                 <SheetTitle>Configuración</SheetTitle>
