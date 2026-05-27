@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -14,7 +14,11 @@ import {
   FileText,
   Download,
   AlertCircle,
-  FileType
+  FileType,
+  Trash2,
+  CheckCircle2,
+  PlusCircle,
+  Undo2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,8 +30,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import { PDFDocument } from "pdf-lib";
+import * as pdfjsLib from "pdfjs-dist";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
+
+// Configure pdfjs worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+interface PageThumbnail {
+  index: number;
+  url: string;
+}
 
 export default function PdfSplitTool() {
   const [mounted, setMounted] = useState(false);
@@ -41,16 +54,98 @@ export default function PdfSplitTool() {
   const [isSplitting, setIsSplitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [outputName, setOutputName] = useState("");
+  
+  // New preview and selection states
+  const [thumbnails, setThumbnails] = useState<PageThumbnail[]>([]);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
+  const [isLoadingPages, setIsLoadingPages] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Sync pageRange input with selectedPages Set
+  useEffect(() => {
+    if (totalPages > 0) {
+      const indices = Array.from(selectedPages).sort((a, b) => a - b);
+      if (indices.length === 0) {
+        setPageRange("");
+        return;
+      }
+
+      // Group into ranges
+      const ranges: string[] = [];
+      let start = indices[0];
+      let end = indices[0];
+
+      for (let i = 1; i <= indices.length; i++) {
+        if (i < indices.length && indices[i] === end + 1) {
+          end = indices[i];
+        } else {
+          if (start === end) {
+            ranges.push(`${start + 1}`);
+          } else {
+            ranges.push(`${start + 1}-${end + 1}`);
+          }
+          if (i < indices.length) {
+            start = indices[i];
+            end = indices[i];
+          }
+        }
+      }
+      setPageRange(ranges.join(", "));
+    }
+  }, [selectedPages, totalPages]);
+
+  const generateThumbnails = async (file: File) => {
+    setIsLoadingPages(true);
+    setThumbnails([]);
+    setSelectedPages(new Set());
+    
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = pdf.numPages;
+      setTotalPages(numPages);
+      
+      const newThumbnails: PageThumbnail[] = [];
+      const initialSelected = new Set<number>();
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 0.3 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        
+        if (context) {
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          await page.render({ canvasContext: context, viewport }).promise;
+          newThumbnails.push({
+            index: i - 1,
+            url: canvas.toDataURL()
+          });
+        }
+        initialSelected.add(i - 1);
+      }
+      
+      setThumbnails(newThumbnails);
+      setSelectedPages(initialSelected);
+    } catch (error) {
+      console.error("Error generating thumbnails:", error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudieron generar las vistas previas del PDF." });
+    } finally {
+      setIsLoadingPages(false);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
       setPdfFile(file);
       setOutputName(file.name.replace('.pdf', '') + '-Split');
+      generateThumbnails(file);
     } else if (file) {
       toast({ variant: "destructive", title: "Error", description: t.pdfFormatOnly });
     }
@@ -73,9 +168,30 @@ export default function PdfSplitTool() {
     if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
       setPdfFile(file);
       setOutputName(file.name.replace('.pdf', '') + '-Split');
+      generateThumbnails(file);
     } else if (file) {
       toast({ variant: "destructive", title: "Error", description: t.pdfFormatOnly });
     }
+  };
+
+  const togglePageSelection = (index: number) => {
+    const newSelection = new Set(selectedPages);
+    if (newSelection.has(index)) {
+      newSelection.delete(index);
+    } else {
+      newSelection.add(index);
+    }
+    setSelectedPages(newSelection);
+  };
+
+  const selectAll = () => {
+    const all = new Set<number>();
+    for (let i = 0; i < totalPages; i++) all.add(i);
+    setSelectedPages(all);
+  };
+
+  const deselectAll = () => {
+    setSelectedPages(new Set());
   };
 
   const parsePageRange = (rangeStr: string, maxPages: number): number[] => {
@@ -84,12 +200,14 @@ export default function PdfSplitTool() {
 
     for (const part of parts) {
       if (part.includes('-')) {
-        const [start, end] = part.split('-').map(n => parseInt(n));
+        const [startStr, endStr] = part.split('-').map(p => p.trim());
+        const start = parseInt(startStr);
+        const end = parseInt(endStr);
         if (!isNaN(start) && !isNaN(end)) {
           const s = Math.max(1, Math.min(start, maxPages));
           const e = Math.max(1, Math.min(end, maxPages));
           for (let i = Math.min(s, e); i <= Math.max(s, e); i++) {
-            pages.add(i - 1); // 0-indexed for pdf-lib
+            pages.add(i - 1);
           }
         }
       } else {
@@ -105,7 +223,7 @@ export default function PdfSplitTool() {
   };
 
   const splitPdf = async () => {
-    if (!pdfFile || !pageRange.trim()) {
+    if (!pdfFile || selectedPages.size === 0) {
       toast({ variant: "destructive", title: "Atención", description: t.invalidRange });
       return;
     }
@@ -114,16 +232,10 @@ export default function PdfSplitTool() {
     try {
       const fileBuffer = await pdfFile.arrayBuffer();
       const originalPdf = await PDFDocument.load(fileBuffer);
-      const maxPages = originalPdf.getPageCount();
-
-      const selectedPageIndices = parsePageRange(pageRange, maxPages);
-
-      if (selectedPageIndices.length === 0) {
-        throw new Error(t.invalidRange);
-      }
+      const indices = Array.from(selectedPages).sort((a, b) => a - b);
 
       const newPdf = await PDFDocument.create();
-      const copiedPages = await newPdf.copyPages(originalPdf, selectedPageIndices);
+      const copiedPages = await newPdf.copyPages(originalPdf, indices);
       copiedPages.forEach(page => newPdf.addPage(page));
 
       const pdfBytes = await newPdf.save();
@@ -174,135 +286,204 @@ export default function PdfSplitTool() {
         <LanguageSelector language={lang} setLanguage={setLang} />
       </header>
 
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto p-4 sm:p-12 bg-slate-100/50 flex flex-col items-center">
-          <div className="w-full max-w-2xl space-y-6">
-            <div className="text-center space-y-2 mb-8">
-              <Badge className="bg-rose-500/10 text-rose-600 border-rose-200 hover:bg-rose-200/20 font-black px-3 py-1">
-                <Zap className="h-3 w-3 mr-2" /> {t.localProcessing}
-              </Badge>
-              <h2 className="text-3xl font-headline font-black tracking-tighter text-slate-900 uppercase">
-                {t.splitSubtitle}
-              </h2>
-            </div>
-
+      <main className="flex-1 flex overflow-hidden relative">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100/50 flex flex-col items-center">
+          <div className="w-full max-w-6xl space-y-6">
             {!pdfFile ? (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={cn(
-                  "w-full aspect-video min-h-[300px] bg-white border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-all group shadow-xl",
-                  isDragging ? "border-rose-500 bg-rose-50/50 scale-[1.02]" : "border-rose-100 hover:border-rose-300"
-                )}
-              >
-                <div className="p-8 bg-rose-50 rounded-full group-hover:scale-110 transition-transform">
-                  <Scissors className="h-16 w-16 text-rose-500" />
+              <div className="max-w-2xl mx-auto w-full pt-12">
+                <div className="text-center space-y-2 mb-8">
+                  <Badge className="bg-rose-500/10 text-rose-600 border-rose-200 hover:bg-rose-200/20 font-black px-3 py-1">
+                    <Zap className="h-3 w-3 mr-2" /> {t.localProcessing}
+                  </Badge>
+                  <h2 className="text-3xl font-headline font-black tracking-tighter text-slate-900 uppercase">
+                    {t.splitSubtitle}
+                  </h2>
                 </div>
-                <h3 className="mt-6 text-xl font-headline font-black text-slate-800 uppercase tracking-tight">Seleccionar PDF</h3>
-                <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
-                <input type="file" ref={fileInputRef} accept="application/pdf" onChange={handleFileSelect} className="hidden" />
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "w-full aspect-video min-h-[300px] bg-white border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-all group shadow-xl",
+                    isDragging ? "border-rose-500 bg-rose-50/50 scale-[1.02]" : "border-rose-100 hover:border-rose-300"
+                  )}
+                >
+                  <div className="p-8 bg-rose-50 rounded-full group-hover:scale-110 transition-transform">
+                    <Scissors className="h-16 w-16 text-rose-500" />
+                  </div>
+                  <h3 className="mt-6 text-xl font-headline font-black text-slate-800 uppercase tracking-tight">Seleccionar PDF</h3>
+                  <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
+                </div>
               </div>
             ) : (
-              <div className="space-y-6 animate-in fade-in duration-500 pb-32">
-                <Card className="p-6 bg-white border-2 border-rose-100 rounded-3xl shadow-sm flex items-center gap-4">
-                  <div className="p-4 bg-rose-50 rounded-2xl">
-                    <FileText className="h-10 w-10 text-rose-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-lg font-black text-slate-800 truncate">{pdfFile.name}</h4>
-                    <p className="text-xs font-bold text-slate-400 uppercase">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="rounded-full text-slate-400 hover:text-destructive"
-                    onClick={() => {
-                      setPdfFile(null);
-                      setPageRange("");
-                    }}
-                  >
-                    <X className="h-6 w-6" />
-                  </Button>
-                </Card>
-
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
-                        {t.pageRange}
-                      </Label>
-                      <Input 
-                        placeholder={t.pageRangePlaceholder}
-                        value={pageRange}
-                        onChange={(e) => setPageRange(e.target.value)}
-                        className="h-12 border-2 focus:border-rose-500 font-black text-lg rounded-2xl px-6"
-                      />
-                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">
-                        Separa por comas o usa guiones para rangos.
+              <div className="animate-in fade-in duration-500 pb-32">
+                {/* File Header */}
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-8 bg-white p-6 rounded-[2rem] border border-rose-100 shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-rose-50 rounded-2xl">
+                      <FileText className="h-8 w-8 text-rose-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-slate-800 truncate max-w-[300px]">{pdfFile.name}</h4>
+                      <p className="text-xs font-bold text-slate-400 uppercase">
+                        {totalPages} Páginas • {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                        {t.outputFileName}
-                      </Label>
-                      <Input 
-                        placeholder={t.outputFileNamePlaceholder}
-                        value={outputName}
-                        onChange={(e) => setOutputName(e.target.value)}
-                        className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
-                      />
-                    </div>
                   </div>
-
-                  <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100 flex items-start gap-4">
-                    <AlertCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-blue-700 uppercase tracking-wider">¿Cómo funciona?</p>
-                      <p className="text-xs text-blue-600/80 font-medium leading-relaxed">
-                        Ingresa los números de las páginas que quieres conservar. Por ejemplo, "1, 3-5, 8" creará un nuevo PDF con las páginas 1, 3, 4, 5 y 8 del original.
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold h-10 px-4 text-xs" onClick={selectAll}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-rose-500" /> Seleccionar Todo
+                    </Button>
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold h-10 px-4 text-xs" onClick={deselectAll}>
+                      <Undo2 className="h-3.5 w-3.5 mr-2 text-slate-400" /> Limpiar
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-10 w-10 rounded-xl text-slate-300 hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setPdfFile(null)}
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
+
+                {isLoadingPages ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="h-12 w-12 text-rose-500 animate-spin" />
+                    <p className="font-black text-rose-600 uppercase tracking-widest text-xs">Generando miniaturas...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    {thumbnails.map((thumb) => {
+                      const isSelected = selectedPages.has(thumb.index);
+                      return (
+                        <div 
+                          key={thumb.index}
+                          className="relative group animate-fade-in"
+                        >
+                          <div 
+                            onClick={() => togglePageSelection(thumb.index)}
+                            className={cn(
+                              "relative aspect-[3/4] bg-white rounded-xl overflow-hidden cursor-pointer transition-all duration-300 border-4 shadow-sm",
+                              isSelected 
+                                ? "border-rose-500 ring-4 ring-rose-500/10 scale-[1.02]" 
+                                : "border-white hover:border-rose-200"
+                            )}
+                          >
+                            <img src={thumb.url} alt={`Página ${thumb.index + 1}`} className="w-full h-full object-cover" />
+                            
+                            {/* Selection Overlay */}
+                            <div className={cn(
+                              "absolute inset-0 transition-opacity duration-300 flex items-center justify-center",
+                              isSelected ? "bg-rose-500/10" : "bg-black/0 group-hover:bg-black/5"
+                            )}>
+                              {isSelected && (
+                                <div className="bg-rose-500 text-white rounded-full p-1.5 shadow-lg transform scale-110">
+                                  <CheckCircle2 className="h-5 w-5" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Page Indicator */}
+                            <div className={cn(
+                              "absolute bottom-2 right-2 px-2 py-0.5 rounded-lg text-[10px] font-black tracking-tighter shadow-sm",
+                              isSelected ? "bg-rose-500 text-white" : "bg-white/90 text-slate-600"
+                            )}>
+                              Pág. {thumb.index + 1}
+                            </div>
+                          </div>
+                          
+                          {/* Floating Actions */}
+                          <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button 
+                              size="icon" 
+                              variant={isSelected ? "destructive" : "secondary"}
+                              className="h-7 w-7 rounded-lg shadow-xl"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePageSelection(thumb.index);
+                              }}
+                            >
+                              {isSelected ? <Trash2 className="h-3.5 w-3.5" /> : <PlusCircle className="h-3.5 w-3.5" />}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
 
         {/* Sidebar Desktop */}
-        <aside className="hidden lg:flex w-80 bg-white border-l border-border flex-col shrink-0 shadow-2xl z-20 p-8">
-          <div className="flex-1 space-y-8">
+        <aside className="hidden lg:flex w-80 bg-white border-l border-border flex-col shrink-0 shadow-2xl z-20">
+          <div className="flex-1 overflow-y-auto p-8 space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-emerald-500" />
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.localProcessing}</h3>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                La extracción se realiza directamente en tu navegador. Tu información nunca viaja a servidores externos, garantizando la seguridad de tus documentos.
+                La extracción se realiza directamente en tu navegador. Tu información nunca viaja a servidores externos.
               </p>
             </div>
 
             <Separator />
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-rose-500">
-                <FileType className="h-5 w-5" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest">Formato de Salida</h3>
+            {pdfFile && (
+              <div className="space-y-6 animate-in slide-in-from-right-10">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                    <FileType className="h-3 w-3" /> Rango de Páginas
+                  </Label>
+                  <Input 
+                    placeholder={t.pageRangePlaceholder}
+                    value={pageRange}
+                    onChange={(e) => {
+                      setPageRange(e.target.value);
+                      const indices = parsePageRange(e.target.value, totalPages);
+                      setSelectedPages(new Set(indices));
+                    }}
+                    className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
+                  />
+                  <p className="text-[8px] text-slate-400 font-bold uppercase">Usa el mouse para seleccionar páginas o escribe aquí.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                    {t.outputFileName}
+                  </Label>
+                  <Input 
+                    placeholder={t.outputFileNamePlaceholder}
+                    value={outputName}
+                    onChange={(e) => setOutputName(e.target.value)}
+                    className="h-10 border-2 focus:border-rose-500 font-bold text-sm rounded-xl"
+                  />
+                </div>
+
+                <div className="bg-rose-50 p-5 rounded-[2rem] border border-rose-100 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas a extraer</span>
+                    <span className="text-xs font-black text-rose-600">{selectedPages.size}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Páginas totales</span>
+                    <span className="text-xs font-black text-slate-700">{totalPages}</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
-                El archivo generado será un PDF estándar compatible con todos los visores y dispositivos.
-              </p>
-            </div>
+            )}
           </div>
 
-          <div className="pt-8">
+          <div className="p-8 border-t bg-slate-50/50">
             <Button 
               className="w-full h-14 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 uppercase tracking-widest text-xs gap-3 transition-all active:scale-95"
               onClick={splitPdf}
-              disabled={!pdfFile || !pageRange.trim() || isSplitting}
+              disabled={!pdfFile || selectedPages.size === 0 || isSplitting}
             >
               {isSplitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
               {isSplitting ? t.splitting : t.splitAction}
@@ -311,19 +492,33 @@ export default function PdfSplitTool() {
         </aside>
 
         {/* Mobile Fixed Action Bar */}
-        {pdfFile && (
-          <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[100] animate-in slide-in-from-bottom-10">
-            <Button 
-              className="w-full h-14 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl shadow-2xl uppercase tracking-widest text-sm gap-3 border-4 border-white/10"
-              onClick={splitPdf}
-              disabled={!pdfFile || !pageRange.trim() || isSplitting}
-            >
-              {isSplitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-              {isSplitting ? t.splitting : t.splitAction}
-            </Button>
+        {pdfFile && selectedPages.size > 0 && (
+          <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[100] animate-in slide-in-from-bottom-10 flex flex-col gap-2">
+            <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-rose-100 shadow-2xl flex items-center justify-between">
+              <div className="px-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase block">Extraer</span>
+                <span className="text-sm font-black text-rose-600">{selectedPages.size} páginas</span>
+              </div>
+              <Button 
+                className="h-12 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl px-6 uppercase tracking-widest text-xs gap-2"
+                onClick={splitPdf}
+                disabled={isSplitting}
+              >
+                {isSplitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {isSplitting ? "..." : "Separar"}
+              </Button>
+            </div>
           </div>
         )}
       </main>
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        accept="application/pdf" 
+        onChange={handleFileSelect} 
+        className="hidden" 
+      />
     </div>
   );
 }
