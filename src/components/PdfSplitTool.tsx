@@ -527,7 +527,11 @@ export default function PdfSplitTool() {
               >
                 <Settings2 className="h-6 w-6" />
               </Button>
-              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-6 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto">
+              <SheetContent 
+                side="right" 
+                className="w-[85%] sm:w-[350px] p-6 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
                 <SheetHeader className="sr-only">
                   <SheetTitle>Ajustes de PDF</SheetTitle>
                   <SheetDescription>Configura el rango y nombre de archivo</SheetDescription>

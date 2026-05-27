@@ -29,8 +29,7 @@ import {
   SheetContent, 
   SheetHeader,
   SheetTitle,
-  SheetDescription,
-  SheetTrigger
+  SheetDescription
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -411,7 +410,11 @@ export default function ImageResizer() {
               >
                 <Settings2 className="h-5 w-5" />
               </Button>
-              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-5 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto">
+              <SheetContent 
+                side="right" 
+                className="w-[85%] sm:w-[350px] p-5 bg-card backdrop-blur-xl shadow-2xl overflow-y-auto"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
                 <SheetHeader className="sr-only">
                   <SheetTitle>Configuración</SheetTitle>
                   <SheetDescription>Ajustes de redimensionado de imagen</SheetDescription>

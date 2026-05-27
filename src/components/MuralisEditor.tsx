@@ -927,7 +927,11 @@ export default function MuralisEditor() {
             >
               <Settings2 className="h-6 w-6" />
             </Button>
-            <SheetContent side="right" className="w-[85%] sm:w-[400px] p-0 bg-background/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col">
+            <SheetContent 
+              side="right" 
+              className="w-[85%] sm:w-[400px] p-0 bg-background/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
               <SheetHeader className="sr-only">
                 <SheetTitle>{t.gridSettings}</SheetTitle>
                 <SheetDescription>Panel de ajustes para la cuadrícula del mural</SheetDescription>
