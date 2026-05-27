@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -143,7 +144,7 @@ export default function PdfToWordConverter() {
 
       <main className="flex-1 overflow-y-auto bg-muted/30">
         <div className="max-w-4xl mx-auto px-6 py-8 lg:py-12 space-y-10 flex flex-col items-center">
-          {/* Uploader Card - NOW FIRST */}
+          {/* Uploader Card */}
           <Card 
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -239,19 +240,6 @@ export default function PdfToWordConverter() {
               </div>
             )}
           </Card>
-
-          {/* Title and Description - NOW BELOW */}
-          <div className="text-center space-y-4 max-w-2xl animate-fade-in">
-            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-black px-4 py-1.5 rounded-full">
-              <CloudLightning className="h-3.5 w-3.5 mr-2" /> MOTOR PROFESIONAL CLOUDCONVERT
-            </Badge>
-            <h2 className="text-3xl sm:text-5xl font-headline font-black tracking-tighter text-foreground uppercase leading-[1.1]">
-              CALIDAD DE ESTUDIO GRÁFICO
-            </h2>
-            <p className="text-muted-foreground font-medium text-base sm:text-lg">
-              Utilizamos tecnología líder para respetar fuentes, tablas y diseños complejos de tus documentos.
-            </p>
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl pb-12">
             <div className="flex items-start gap-4 bg-blue-500/5 p-6 rounded-[2rem] border border-blue-500/10 shadow-sm">
