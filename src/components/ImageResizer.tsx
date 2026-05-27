@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -15,7 +16,9 @@ import {
   Scale,
   Ruler,
   Zap,
-  ImageIcon
+  ImageIcon,
+  ShieldCheck,
+  Cpu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -68,7 +71,6 @@ export default function ImageResizer() {
         name: file.name 
       });
 
-      // Default to 1:1 scale at 300 DPI or just some reasonable default cm
       const pixelsPerCm = 300 / 2.54;
       setTargetWidth(Math.round(img.width / pixelsPerCm * 10) / 10);
       setTargetHeight(Math.round(img.height / pixelsPerCm * 10) / 10);
@@ -98,7 +100,6 @@ export default function ImageResizer() {
     setIsResizing(true);
 
     try {
-      // Calculate final pixel dimensions
       const factor = unit === 'cm' ? 2.54 : 1;
       const finalPixelW = Math.round((targetWidth / factor) * dpi);
       const finalPixelH = Math.round((targetHeight / factor) * dpi);
@@ -113,7 +114,6 @@ export default function ImageResizer() {
       img.src = image.url;
       await new Promise((resolve) => img.onload = resolve);
 
-      // Higher quality downscaling
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, finalPixelW, finalPixelH);
@@ -155,7 +155,12 @@ export default function ImageResizer() {
             <h1 className="text-xl font-headline font-black tracking-tighter text-emerald-600 uppercase">RESIZER PRO</h1>
           </div>
         </div>
-        <LanguageSelector language={lang} setLanguage={setLang} />
+        <div className="flex items-center gap-4">
+          <Badge variant="outline" className="hidden lg:flex items-center gap-2 border-emerald-200 bg-emerald-50 text-emerald-700 font-bold px-3 py-1">
+            <Cpu className="h-3 w-3" /> {t.localProcessing}
+          </Badge>
+          <LanguageSelector language={lang} setLanguage={setLang} />
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
@@ -170,6 +175,9 @@ export default function ImageResizer() {
               </div>
               <h3 className="mt-8 text-2xl font-headline font-black text-slate-800 uppercase tracking-tight">{t.resizerTitle}</h3>
               <p className="mt-2 text-slate-500 font-medium">{t.dragDrop}</p>
+              <div className="mt-6 flex items-center gap-2 text-emerald-600/60 font-black text-[10px] uppercase tracking-[0.2em]">
+                <ShieldCheck className="h-4 w-4" /> {t.privacyNote}
+              </div>
               <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileSelect} className="hidden" />
             </div>
           ) : (
@@ -181,7 +189,7 @@ export default function ImageResizer() {
                   className="w-full h-auto max-h-[60vh] object-contain" 
                 />
                 <div className="absolute top-6 left-6 flex gap-2">
-                  <Badge className="bg-emerald-500 text-white border-none font-black shadow-lg">
+                  <Badge className="bg-emerald-500 text-white border-none font-black shadow-lg px-4 py-1.5 text-xs">
                     {image.width} x {image.height} PX
                   </Badge>
                 </div>
@@ -320,6 +328,16 @@ export default function ImageResizer() {
                   {isResizing ? <Loader2 className="h-6 w-6 animate-spin" /> : <Download className="h-6 w-6" />}
                   {isResizing ? t.resizing : t.downloadImage}
                 </Button>
+              </div>
+
+              <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">{t.localProcessing}</span>
+                </div>
+                <p className="text-[9px] font-medium text-slate-500 leading-tight">
+                  {t.privacyNote}
+                </p>
               </div>
             </div>
           </div>

@@ -86,7 +86,9 @@ export const translations = {
     quality: 'Print Quality',
     low: 'Draft (72 dpi)',
     medium: 'Standard (150 dpi)',
-    high: 'Professional (300 dpi)'
+    high: 'Professional (300 dpi)',
+    localProcessing: '100% Local Processing',
+    privacyNote: 'Your images never leave this device. Private and fast.'
   },
   es: {
     title: 'MURALIS',
@@ -172,6 +174,8 @@ export const translations = {
     quality: 'Calidad de Impresión',
     low: 'Borrador (72 dpi)',
     medium: 'Estándar (150 dpi)',
-    high: 'Profesional (300 dpi)'
+    high: 'Profesional (300 dpi)',
+    localProcessing: 'Procesamiento 100% Local',
+    privacyNote: 'Tus imágenes nunca salen de este dispositivo. Privado y rápido.'
   }
 };
