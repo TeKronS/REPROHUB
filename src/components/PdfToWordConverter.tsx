@@ -25,6 +25,7 @@ import { LanguageSelector } from "./LanguageSelector";
 import { convertPdfToDocx } from "@/app/actions/convert";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function PdfToWordConverter() {
   const [mounted, setMounted] = useState(false);
@@ -46,7 +47,7 @@ export default function PdfToWordConverter() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type === "application/pdf") {
+    if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
       setPdfFile(file);
       setProgress(0);
       setDownloadUrl(null);
@@ -69,7 +70,7 @@ export default function PdfToWordConverter() {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type === "application/pdf") {
+    if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf'))) {
       setPdfFile(file);
       setProgress(0);
       setDownloadUrl(null);
@@ -118,8 +119,8 @@ export default function PdfToWordConverter() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-body overflow-hidden">
-      <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
+    <div className="flex flex-col h-screen bg-background font-body overflow-hidden transition-colors duration-300">
+      <header className="h-16 shrink-0 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-6 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="sm" className="gap-2 font-bold text-muted-foreground px-2">
@@ -128,25 +129,28 @@ export default function PdfToWordConverter() {
             </Button>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 relative rounded-lg overflow-hidden border">
+            <div className="w-8 h-8 relative rounded-lg overflow-hidden border bg-white dark:bg-slate-200">
               <Image src={logo} alt="Logo" fill className="object-contain" />
             </div>
             <h1 className="text-xl font-headline font-black tracking-tighter text-primary uppercase">PDF A WORD PRO</h1>
           </div>
         </div>
-        <LanguageSelector language={lang} setLanguage={setLang} />
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <LanguageSelector language={lang} setLanguage={setLang} />
+        </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 overflow-y-auto">
-        <div className="w-full max-w-2xl space-y-8 animate-fade-in">
-          <div className="text-center space-y-3">
-            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-black mb-2 px-3 py-1">
-              <CloudLightning className="h-3 w-3 mr-2" /> MOTOR PROFESIONAL CLOUDCONVERT
+      <main className="flex-1 overflow-y-auto bg-muted/30">
+        <div className="max-w-4xl mx-auto px-6 py-12 lg:py-16 space-y-10 flex flex-col items-center">
+          <div className="text-center space-y-4 max-w-2xl animate-fade-in">
+            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-black px-4 py-1.5 rounded-full">
+              <CloudLightning className="h-3.5 w-3.5 mr-2" /> MOTOR PROFESIONAL CLOUDCONVERT
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-headline font-black tracking-tighter text-slate-900 uppercase">
+            <h2 className="text-3xl sm:text-5xl font-headline font-black tracking-tighter text-foreground uppercase leading-[1.1]">
               CALIDAD DE ESTUDIO GRÁFICO
             </h2>
-            <p className="text-slate-500 font-medium max-w-md mx-auto">
+            <p className="text-muted-foreground font-medium text-base sm:text-lg">
               Utilizamos tecnología líder para respetar fuentes, tablas y diseños complejos de tus documentos.
             </p>
           </div>
@@ -156,39 +160,39 @@ export default function PdfToWordConverter() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={cn(
-              "border-4 border-dashed p-8 sm:p-12 bg-white rounded-[2.5rem] relative shadow-2xl overflow-hidden group transition-all",
-              isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-primary/20 hover:border-primary/40"
+              "w-full max-w-2xl border-4 border-dashed p-8 sm:p-14 bg-card rounded-[3rem] relative shadow-2xl overflow-hidden group transition-all duration-300",
+              isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-border hover:border-primary/40"
             )}
           >
             {!pdfFile ? (
-              <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center space-y-6 cursor-pointer">
-                <div className="p-8 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-300">
-                  <FileType className={cn("h-16 w-16 transition-colors", isDragging ? "text-primary" : "text-primary/60")} />
+              <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center space-y-8 cursor-pointer">
+                <div className="p-10 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-300">
+                  <FileType className={cn("h-20 w-20 transition-colors", isDragging ? "text-primary" : "text-primary/60")} />
                 </div>
-                <div className="text-center space-y-2">
-                  <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Seleccionar PDF</h3>
-                  <p className="text-slate-500 font-bold text-sm">Convierte respetando el diseño exacto.</p>
+                <div className="text-center space-y-3">
+                  <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Seleccionar PDF</h3>
+                  <p className="text-muted-foreground font-bold text-sm">Convierte respetando el diseño exacto.</p>
                 </div>
-                <Button className="bg-primary hover:bg-primary/90 text-white font-black px-8 py-6 rounded-2xl text-lg uppercase tracking-widest shadow-xl">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-black px-10 py-7 rounded-2xl text-lg uppercase tracking-widest shadow-xl transition-all active:scale-95">
                   Elegir Archivo
                 </Button>
                 <input type="file" ref={fileInputRef} accept="application/pdf" onChange={handleFileSelect} className="hidden" />
               </div>
             ) : (
-              <div className="space-y-8">
-                <div className="flex items-center gap-6 p-6 bg-primary/5 rounded-3xl border border-primary/10">
+              <div className="space-y-8 animate-in zoom-in-95 duration-300">
+                <div className="flex items-center gap-6 p-6 bg-muted rounded-[2rem] border border-border shadow-inner">
                   <div className="p-4 bg-primary/10 rounded-2xl">
                     <FileType className="h-10 w-10 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-lg font-black text-slate-800 truncate">{pdfFile.name}</h4>
-                    <p className="text-xs font-bold text-slate-400 uppercase">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <h4 className="text-lg font-black text-foreground truncate">{pdfFile.name}</h4>
+                    <p className="text-xs font-bold text-muted-foreground uppercase">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                   {!isConverting && !downloadUrl && (
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="rounded-full text-slate-400 hover:text-destructive"
+                      className="rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setPdfFile(null)}
                     >
                       <X className="h-6 w-6" />
@@ -197,23 +201,23 @@ export default function PdfToWordConverter() {
                 </div>
 
                 {isConverting && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-[11px] font-black text-primary uppercase tracking-widest px-2">
                       <span className="flex items-center gap-2">
-                        <Zap className="h-3 w-3 text-emerald-500 animate-pulse" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                         {statusText}
                       </span>
                       <span>{progress}%</span>
                     </div>
-                    <Progress value={progress} className="h-3 bg-primary/10 rounded-full" />
-                    <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Esto puede tardar unos segundos dependiendo del tamaño del archivo.</p>
+                    <Progress value={progress} className="h-4 bg-primary/10 rounded-full" />
+                    <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Esto puede tardar unos segundos dependiendo del tamaño.</p>
                   </div>
                 )}
 
                 {downloadUrl ? (
                   <div className="space-y-4">
                     <Button 
-                      className="w-full h-16 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-2xl text-lg uppercase tracking-widest gap-3"
+                      className="w-full h-16 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 text-lg uppercase tracking-widest gap-3 transition-all active:scale-95"
                       asChild
                     >
                       <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
@@ -223,7 +227,7 @@ export default function PdfToWordConverter() {
                     </Button>
                     <Button 
                       variant="ghost" 
-                      className="w-full font-bold text-slate-400 uppercase text-xs"
+                      className="w-full font-black text-muted-foreground hover:text-primary uppercase text-xs tracking-widest"
                       onClick={() => {
                         setPdfFile(null);
                         setDownloadUrl(null);
@@ -235,7 +239,7 @@ export default function PdfToWordConverter() {
                   </div>
                 ) : (
                   <Button 
-                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-2xl text-lg uppercase tracking-widest gap-3"
+                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-primary/20 text-lg uppercase tracking-widest gap-3 transition-all active:scale-95"
                     onClick={startConversion}
                     disabled={isConverting}
                   >
@@ -247,26 +251,30 @@ export default function PdfToWordConverter() {
             )}
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-              <ShieldCheck className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl pb-12">
+            <div className="flex items-start gap-4 bg-blue-500/5 p-6 rounded-[2rem] border border-blue-500/10 shadow-sm">
+              <div className="p-2 bg-blue-500/10 rounded-xl">
+                <ShieldCheck className="h-5 w-5 text-blue-500" />
+              </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-blue-700 uppercase tracking-wider">Máxima Fidelidad</p>
-                <p className="text-[11px] text-blue-600/80 font-medium">Respetamos logotipos, imágenes y el interlineado exacto de tu PDF.</p>
+                <p className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Máxima Fidelidad</p>
+                <p className="text-xs text-muted-foreground font-medium leading-relaxed">Respetamos logotipos, imágenes y el interlineado exacto de tu PDF original.</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-2xl border border-amber-100">
-              <Type className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-4 bg-amber-500/5 p-6 rounded-[2rem] border border-amber-500/10 shadow-sm">
+              <div className="p-2 bg-amber-500/10 rounded-xl">
+                <Type className="h-5 w-5 text-amber-500" />
+              </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">Fuentes Originales</p>
-                <p className="text-[11px] text-amber-600/80 font-medium">Detectamos tipografías profesionales para que el Word sea 100% editable.</p>
+                <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Fuentes Originales</p>
+                <p className="text-xs text-muted-foreground font-medium leading-relaxed">Detectamos tipografías profesionales para que el Word sea 100% editable.</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-slate-400">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground/60 pb-8">
             <AlertCircle className="h-4 w-4" />
-            <p className="text-[10px] font-bold uppercase tracking-widest">Los archivos se eliminan automáticamente tras 24 horas.</p>
+            <p className="text-[10px] font-black uppercase tracking-widest">Los archivos se eliminan automáticamente tras 24 horas.</p>
           </div>
         </div>
       </main>
