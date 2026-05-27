@@ -27,6 +27,13 @@ import {
   SelectItem, 
   SelectTrigger 
 } from "@/components/ui/select";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -51,6 +58,7 @@ export default function ImageResizer() {
   const [unit, setUnit] = useState<'cm' | 'in'>('cm');
   const [lockAspect, setLockAspect] = useState(true);
   const [isResizing, setIsResizing] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -138,6 +146,110 @@ export default function ImageResizer() {
   const finalPixelsH = image ? Math.round(((unit === 'cm' ? targetHeight / 2.54 : targetHeight)) * dpi) : 0;
   const megapixels = Math.round((finalPixelsW * finalPixelsH) / 1000000 * 10) / 10;
 
+  const renderSettingsContent = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-1">
+        <Settings2 className="h-4 w-4 text-emerald-500" />
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{t.gridSettings}</h2>
+      </div>
+
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.units}</Label>
+          <Select value={unit} onValueChange={(v: any) => setUnit(v)}>
+            <SelectTrigger className="h-9 font-bold border-2 rounded-xl">
+              <span className="truncate">{unit === 'cm' ? t.unitsCm : t.unitsIn}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cm" className="font-bold">{t.unitsCm}</SelectItem>
+              <SelectItem value="in" className="font-bold">{t.unitsIn}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 relative">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.width}</Label>
+            <div className="relative">
+              <Input 
+                type="number" 
+                value={targetWidth} 
+                onChange={(e) => handleWidthChange(e.target.value)}
+                className="h-10 font-black text-lg rounded-xl border-2 pl-4 pr-12 text-emerald-600 focus-visible:ring-emerald-500"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300">{unit}</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center -my-1.5 z-10">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className={cn(
+                "h-7 w-7 rounded-full bg-slate-50 border-2 transition-all",
+                lockAspect ? "text-emerald-500 border-emerald-500 scale-110" : "text-slate-300 border-slate-200"
+              )}
+              onClick={() => setLockAspect(!lockAspect)}
+            >
+              {lockAspect ? <LinkIcon className="h-3.5 w-3.5" /> : <Link2Off className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.height}</Label>
+            <div className="relative">
+              <Input 
+                type="number" 
+                value={targetHeight} 
+                onChange={(e) => handleHeightChange(e.target.value)}
+                className="h-10 font-black text-lg rounded-xl border-2 pl-4 pr-12 text-emerald-600 focus-visible:ring-emerald-500"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300">{unit}</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator className="my-1" />
+
+        <div className="space-y-1.5">
+          <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.targetDpi}</Label>
+          <Select value={dpi.toString()} onValueChange={(v) => setDpi(parseInt(v))}>
+            <SelectTrigger className="h-9 font-bold border-2 rounded-xl">
+              <span className="truncate">{dpi} DPI</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="72" className="font-bold">72 DPI ({t.low})</SelectItem>
+              <SelectItem value="150" className="font-bold">150 DPI ({t.medium})</SelectItem>
+              <SelectItem value="300" className="font-bold">300 DPI ({t.high})</SelectItem>
+              <SelectItem value="600" className="font-bold">600 DPI (Ultra)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="pt-2">
+          <Button 
+            className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-xl shadow-emerald-500/20 text-base gap-3 transition-all active:scale-95"
+            onClick={startResizing}
+            disabled={!image || isResizing}
+          >
+            {isResizing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            {isResizing ? t.resizing : t.downloadImage}
+          </Button>
+        </div>
+
+        <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+          <div className="flex items-center gap-2 mb-0.5">
+            <ShieldCheck className="h-3 w-3 text-emerald-600" />
+            <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest">{t.localProcessing}</span>
+          </div>
+          <p className="text-[8px] font-medium text-slate-500 leading-tight">
+            {t.privacyNote}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-body overflow-hidden">
       <header className="h-16 shrink-0 border-b border-border bg-white flex items-center justify-between px-6 z-50 shadow-sm">
@@ -181,7 +293,7 @@ export default function ImageResizer() {
               <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileSelect} className="hidden" />
             </div>
           ) : (
-            <div className="w-full max-w-4xl space-y-8 animate-fade-in">
+            <div className="w-full max-w-4xl space-y-8 animate-fade-in pb-20 md:pb-0">
               <div className="relative group rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white bg-white">
                 <img 
                   src={image.url} 
@@ -236,112 +348,32 @@ export default function ImageResizer() {
           )}
         </div>
 
-        <aside className="w-full md:w-80 bg-white border-l border-border p-6 overflow-y-auto shrink-0 shadow-2xl z-20">
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Settings2 className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{t.gridSettings}</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.units}</Label>
-                <Select value={unit} onValueChange={(v: any) => setUnit(v)}>
-                  <SelectTrigger className="h-10 font-bold border-2 rounded-xl">
-                    <span className="truncate">{unit === 'cm' ? t.unitsCm : t.unitsIn}</span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cm" className="font-bold">{t.unitsCm}</SelectItem>
-                    <SelectItem value="in" className="font-bold">{t.unitsIn}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 relative">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.width}</Label>
-                  <div className="relative">
-                    <Input 
-                      type="number" 
-                      value={targetWidth} 
-                      onChange={(e) => handleWidthChange(e.target.value)}
-                      className="h-12 font-black text-lg rounded-xl border-2 pl-4 pr-12 text-emerald-600 focus-visible:ring-emerald-500"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300">{unit}</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-center -my-2 z-10">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn(
-                      "h-8 w-8 rounded-full bg-slate-50 border-2 transition-all",
-                      lockAspect ? "text-emerald-500 border-emerald-500 scale-110" : "text-slate-300 border-slate-200"
-                    )}
-                    onClick={() => setLockAspect(!lockAspect)}
-                  >
-                    {lockAspect ? <LinkIcon className="h-4 w-4" /> : <Link2Off className="h-4 w-4" />}
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.height}</Label>
-                  <div className="relative">
-                    <Input 
-                      type="number" 
-                      value={targetHeight} 
-                      onChange={(e) => handleHeightChange(e.target.value)}
-                      className="h-12 font-black text-lg rounded-xl border-2 pl-4 pr-12 text-emerald-600 focus-visible:ring-emerald-500"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300">{unit}</span>
-                  </div>
-                </div>
-              </div>
-
-              <Separator className="my-2" />
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.targetDpi}</Label>
-                <Select value={dpi.toString()} onValueChange={(v) => setDpi(parseInt(v))}>
-                  <SelectTrigger className="h-10 font-bold border-2 rounded-xl">
-                    <span className="truncate">{dpi} DPI</span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="72" className="font-bold">72 DPI ({t.low})</SelectItem>
-                    <SelectItem value="150" className="font-bold">150 DPI ({t.medium})</SelectItem>
-                    <SelectItem value="300" className="font-bold">300 DPI ({t.high})</SelectItem>
-                    <SelectItem value="600" className="font-bold">600 DPI (Ultra)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[9px] font-bold text-slate-400 leading-tight">
-                  Un mayor DPI aumenta el detalle pero también el tamaño del archivo final.
-                </p>
-              </div>
-
-              <div className="pt-6">
-                <Button 
-                  className="w-full h-16 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-[1.5rem] shadow-xl shadow-emerald-500/20 text-lg gap-3 transition-all active:scale-95"
-                  onClick={startResizing}
-                  disabled={!image || isResizing}
-                >
-                  {isResizing ? <Loader2 className="h-6 w-6 animate-spin" /> : <Download className="h-6 w-6" />}
-                  {isResizing ? t.resizing : t.downloadImage}
-                </Button>
-              </div>
-
-              <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">{t.localProcessing}</span>
-                </div>
-                <p className="text-[9px] font-medium text-slate-500 leading-tight">
-                  {t.privacyNote}
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:block w-80 bg-white border-l border-border p-6 overflow-y-auto shrink-0 shadow-2xl z-20">
+          {renderSettingsContent()}
         </aside>
+
+        {/* Mobile Toggle Button and Sheet */}
+        {image && (
+          <div className="md:hidden fixed bottom-6 right-6 z-[100] pointer-events-auto">
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <Button 
+                size="icon" 
+                className="h-14 w-14 rounded-full shadow-2xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all active:scale-95 border-4 border-white"
+                onClick={() => setIsMenuOpen(true)}
+              >
+                <Settings2 className="h-6 w-6" />
+              </Button>
+              <SheetContent side="right" className="w-[85%] sm:w-[350px] p-5 bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Configuración</SheetTitle>
+                  <SheetDescription>Ajustes de redimensionado de imagen</SheetDescription>
+                </SheetHeader>
+                {renderSettingsContent()}
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </main>
     </div>
   );
