@@ -25,6 +25,7 @@ import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import { convertPdfToDocx } from "@/app/actions/convert";
 import logo from "@/app/icono.png";
+import { cn } from "@/lib/utils";
 
 export default function PdfToWordConverter() {
   const [mounted, setMounted] = useState(false);
@@ -38,6 +39,7 @@ export default function PdfToWordConverter() {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -45,6 +47,29 @@ export default function PdfToWordConverter() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (file && file.type === "application/pdf") {
+      setPdfFile(file);
+      setProgress(0);
+      setDownloadUrl(null);
+    } else if (file) {
+      toast({ variant: "destructive", title: "Formato no válido", description: "Por favor selecciona un archivo PDF." });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
     if (file && file.type === "application/pdf") {
       setPdfFile(file);
       setProgress(0);
@@ -65,7 +90,6 @@ export default function PdfToWordConverter() {
       const formData = new FormData();
       formData.append('file', pdfFile);
 
-      // Simulación visual de progreso para dar feedback al usuario
       const progressInterval = setInterval(() => {
         setProgress(prev => (prev < 95 ? prev + 1 : prev));
       }, 300);
@@ -128,11 +152,19 @@ export default function PdfToWordConverter() {
             </p>
           </div>
 
-          <Card className="border-4 border-dashed border-primary/20 p-8 sm:p-12 bg-white rounded-[2.5rem] relative shadow-2xl overflow-hidden group transition-all hover:border-primary/40">
+          <Card 
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "border-4 border-dashed p-8 sm:p-12 bg-white rounded-[2.5rem] relative shadow-2xl overflow-hidden group transition-all",
+              isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-primary/20 hover:border-primary/40"
+            )}
+          >
             {!pdfFile ? (
               <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center space-y-6 cursor-pointer">
                 <div className="p-8 bg-primary/10 rounded-full group-hover:scale-110 transition-transform duration-300">
-                  <FileType className="h-16 w-16 text-primary" />
+                  <FileType className={cn("h-16 w-16 transition-colors", isDragging ? "text-primary" : "text-primary/60")} />
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Seleccionar PDF</h3>
