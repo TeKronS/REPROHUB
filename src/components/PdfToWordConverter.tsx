@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -10,7 +9,6 @@ import {
   Loader2, 
   X,
   ShieldCheck,
-  Zap,
   Type,
   CloudLightning,
   Download,
@@ -19,11 +17,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Language, translations } from "@/lib/translations";
 import { LanguageSelector } from "./LanguageSelector";
-import { convertPdfToDocx } from "@/app/actions/convert";
+import { startPdfConversion, getJobStatus } from "@/app/actions/convert";
 import logo from "@/app/icono.png";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
@@ -84,36 +81,63 @@ export default function PdfToWordConverter() {
     if (!pdfFile) return;
 
     setIsConverting(true);
-    setProgress(10);
+    setProgress(5);
     setStatusText("Subiendo archivo...");
+    setDownloadUrl(null);
 
     try {
       const formData = new FormData();
       formData.append('file', pdfFile);
 
-      const progressInterval = setInterval(() => {
-        setProgress(prev => (prev < 95 ? prev + 1 : prev));
-      }, 300);
+      // Paso 1: Iniciar el trabajo y subir el archivo
+      const { jobId } = await startPdfConversion(formData);
+      
+      if (!jobId) throw new Error("No se pudo obtener el ID del trabajo.");
 
-      const result = await convertPdfToDocx(formData);
-      
-      clearInterval(progressInterval);
-      setProgress(100);
-      setDownloadUrl(result.url);
-      
-      toast({ 
-        title: "¡Conversión Exitosa!", 
-        description: "El diseño original se ha preservado con alta fidelidad." 
-      });
+      setStatusText("Procesando en la nube...");
+      setProgress(25);
+
+      // Paso 2: Sondeo (Polling) para verificar el estado
+      const pollInterval = setInterval(async () => {
+        try {
+          const jobResult = await getJobStatus(jobId);
+
+          if (jobResult.status === 'error') {
+            clearInterval(pollInterval);
+            setIsConverting(false);
+            toast({ 
+              variant: "destructive", 
+              title: "Error de Conversión", 
+              description: jobResult.message 
+            });
+          } else if (jobResult.status === 'finished' && jobResult.url) {
+            clearInterval(pollInterval);
+            setProgress(100);
+            setDownloadUrl(jobResult.url);
+            setIsConverting(false);
+            toast({ 
+              title: "¡Conversión Exitosa!", 
+              description: "El documento está listo para descargar." 
+            });
+          } else if (jobResult.progress) {
+            setProgress(jobResult.progress);
+            // Actualizar texto según el progreso
+            if (jobResult.progress > 40) setStatusText("Extrayendo texto y diseño...");
+            if (jobResult.progress > 80) setStatusText("Generando archivo Word...");
+          }
+        } catch (pollError) {
+          console.error("Error en sondeo:", pollError);
+        }
+      }, 3000); // Consultar cada 3 segundos
+
     } catch (error: any) {
       console.error(error);
+      setIsConverting(false);
       toast({ 
         variant: "destructive", 
-        title: "Error de Conversión", 
-        description: error.message || "Asegúrate de que tu API Key de CloudConvert sea válida." 
+        title: "Error de Conexión", 
+        description: error.message || "No se pudo iniciar la conversión. Inténtalo de nuevo." 
       });
-    } finally {
-      setIsConverting(false);
     }
   };
 
@@ -144,7 +168,8 @@ export default function PdfToWordConverter() {
 
       <main className="flex-1 overflow-y-auto bg-muted/30">
         <div className="max-w-4xl mx-auto px-6 py-8 lg:py-12 space-y-10 flex flex-col items-center">
-          {/* Uploader Card */}
+          
+          {/* Uploader Card - Primera posición */}
           <Card 
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -161,7 +186,7 @@ export default function PdfToWordConverter() {
                 </div>
                 <div className="text-center space-y-3">
                   <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Seleccionar PDF</h3>
-                  <p className="text-muted-foreground font-bold text-sm">Convierte respetando el diseño exacto.</p>
+                  <p className="text-muted-foreground font-bold text-sm">Arrastra el archivo que deseas convertir.</p>
                 </div>
                 <Button className="bg-primary hover:bg-primary/90 text-white font-black px-10 py-7 rounded-2xl text-lg uppercase tracking-widest shadow-xl transition-all active:scale-95">
                   Elegir Archivo
@@ -200,7 +225,7 @@ export default function PdfToWordConverter() {
                       <span>{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-4 bg-primary/10 rounded-full" />
-                    <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Esto puede tardar unos segundos dependiendo del tamaño.</p>
+                    <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-wider">No cierres esta ventana mientras procesamos tu archivo.</p>
                   </div>
                 )}
 
@@ -234,13 +259,14 @@ export default function PdfToWordConverter() {
                     disabled={isConverting}
                   >
                     {isConverting ? <Loader2 className="h-6 w-6 animate-spin" /> : <CloudLightning className="h-6 w-6" />}
-                    {isConverting ? "Procesando en la nube..." : "Convertir con Alta Calidad"}
+                    {isConverting ? "Iniciando..." : "Convertir con Alta Calidad"}
                   </Button>
                 )}
               </div>
             )}
           </Card>
 
+          {/* Beneficios */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl pb-12">
             <div className="flex items-start gap-4 bg-blue-500/5 p-6 rounded-[2rem] border border-blue-500/10 shadow-sm">
               <div className="p-2 bg-blue-500/10 rounded-xl">
@@ -264,7 +290,7 @@ export default function PdfToWordConverter() {
 
           <div className="flex items-center justify-center gap-2 text-muted-foreground/60 pb-8">
             <AlertCircle className="h-4 w-4" />
-            <p className="text-[10px] font-black uppercase tracking-widest">Los archivos se eliminan automáticamente tras 24 horas.</p>
+            <p className="text-[10px] font-black uppercase tracking-widest">Procesamiento seguro en la nube. Los archivos se eliminan automáticamente.</p>
           </div>
         </div>
       </main>

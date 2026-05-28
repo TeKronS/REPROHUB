@@ -2,21 +2,26 @@
 
 import CloudConvert from 'cloudconvert';
 
-const cloudConvert = new CloudConvert(process.env.CLOUDCONVERT_API_KEY || '');
+const apiKey = process.env.CLOUDCONVERT_API_KEY || '';
 
-export async function convertPdfToDocx(formData: FormData) {
+/**
+ * Inicia el trabajo de conversión en CloudConvert y sube el archivo.
+ * Retorna el ID del trabajo para que el cliente pueda consultar su progreso.
+ */
+export async function startPdfConversion(formData: FormData) {
+  if (!apiKey) {
+    throw new Error('API Key de CloudConvert no configurada en las variables de entorno.');
+  }
+
   const file = formData.get('file') as File;
-  
   if (!file) {
-    throw new Error('No se ha proporcionado ningún archivo');
+    throw new Error('No se ha proporcionado ningún archivo.');
   }
 
-  if (!process.env.CLOUDCONVERT_API_KEY) {
-    throw new Error('API Key de CloudConvert no configurada. Por favor, añádela a tu archivo .env');
-  }
+  const cloudConvert = new CloudConvert(apiKey);
 
   try {
-    // Creamos el trabajo de conversión
+    // Creamos el trabajo de conversión con tres tareas: importación, conversión y exportación
     const job = await cloudConvert.jobs.create({
       tasks: {
         'import-my-file': {
@@ -26,8 +31,6 @@ export async function convertPdfToDocx(formData: FormData) {
           operation: 'convert',
           input: 'import-my-file',
           output_format: 'docx',
-          // Eliminamos el motor específico para evitar el error 422 si no está disponible
-          // CloudConvert usará el mejor motor por defecto para docx
         },
         'export-my-file': {
           operation: 'export/url',
@@ -36,35 +39,61 @@ export async function convertPdfToDocx(formData: FormData) {
       },
     });
 
-    const uploadTask = job.tasks.filter(task => task.operation === 'import/upload')[0];
+    const uploadTask = job.tasks.find(task => task.operation === 'import/upload');
+    if (!uploadTask) throw new Error('No se pudo inicializar la tarea de subida.');
+
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Subimos el archivo a la tarea de importación
+    // Subimos el archivo a CloudConvert
     await cloudConvert.tasks.upload(uploadTask, buffer, file.name);
 
-    // Esperamos a que el trabajo termine (polling)
-    const finishedJob = await cloudConvert.jobs.wait(job.id!);
+    return { jobId: job.id };
+  } catch (error: any) {
+    console.error('Error al iniciar CloudConvert:', error.message);
+    throw new Error(`Error al iniciar conversión: ${error.message}`);
+  }
+}
+
+/**
+ * Consulta el estado actual de un trabajo de CloudConvert.
+ */
+export async function getJobStatus(jobId: string) {
+  if (!apiKey) throw new Error('API Key no configurada.');
+  const cloudConvert = new CloudConvert(apiKey);
+  
+  try {
+    const job = await cloudConvert.jobs.get(jobId);
     
-    // Verificamos si hubo errores en alguna tarea
-    const failedTask = finishedJob.tasks.find(task => task.status === 'error');
+    // Verificar si alguna tarea falló
+    const failedTask = job.tasks.find(task => task.status === 'error');
     if (failedTask) {
-      throw new Error(`Error en la tarea ${failedTask.operation}: ${failedTask.message || 'Desconocido'}`);
+      return { 
+        status: 'error', 
+        message: failedTask.message || 'Ocurrió un error técnico durante la conversión.' 
+      };
     }
 
-    const exportTask = finishedJob.tasks.find(task => task.operation === 'export/url' && task.status === 'finished');
-    
-    if (!exportTask || !exportTask.result || !exportTask.result.files || exportTask.result.files.length === 0) {
-      throw new Error('La exportación del archivo falló o no devolvió resultados');
+    // Verificar si el archivo ya está listo para descargar
+    const exportTask = job.tasks.find(task => task.operation === 'export/url' && task.status === 'finished');
+    if (exportTask && exportTask.result && exportTask.result.files && exportTask.result.files.length > 0) {
+      return { 
+        status: 'finished', 
+        url: exportTask.result.files[0].url, 
+        name: exportTask.result.files[0].filename 
+      };
     }
 
-    return {
-      url: exportTask.result.files[0].url,
-      name: exportTask.result.files[0].filename
+    // Calcular progreso basado en tareas completadas
+    const totalTasks = job.tasks.length;
+    const finishedTasks = job.tasks.filter(t => t.status === 'finished').length;
+    const progress = Math.min(95, Math.round((finishedTasks / totalTasks) * 100));
+
+    return { 
+      status: job.status, 
+      progress 
     };
   } catch (error: any) {
-    // Intentamos extraer el mensaje de error detallado de la respuesta de la API
-    const detail = error.response?.data?.message || error.message;
-    console.error('CloudConvert API Error:', detail);
-    throw new Error(`Error CloudConvert: ${detail}`);
+    console.error('Error al consultar estado:', error.message);
+    return { status: 'error', message: 'No se pudo obtener el estado del servidor.' };
   }
 }
