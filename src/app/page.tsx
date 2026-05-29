@@ -47,7 +47,7 @@ export default function Home() {
       icon: <Copy className="h-8 w-8 text-indigo-500" />,
       href: "/pdf-merge",
       status: "active",
-      badge: "PRO"
+      badge: "NEW"
     },
     {
       title: t.splitTitle,
@@ -55,7 +55,7 @@ export default function Home() {
       icon: <Scissors className="h-8 w-8 text-rose-500" />,
       href: "/pdf-split",
       status: "active",
-      badge: "PRO"
+      badge: "NEW"
     },
     {
       title: t.imgToPdfTitle,
@@ -63,7 +63,7 @@ export default function Home() {
       icon: <FileText className="h-8 w-8 text-blue-500" />,
       href: "/image-to-pdf",
       status: "active",
-      badge: "PRO"
+      badge: "NEW"
     },
     {
       title: t.pdfToWordTitle,

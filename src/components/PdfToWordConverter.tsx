@@ -157,7 +157,7 @@ export default function PdfToWordConverter() {
             <div className="w-8 h-8 relative rounded-lg overflow-hidden border bg-white dark:bg-slate-200">
               <Image src={logo} alt="Logo" fill className="object-contain" />
             </div>
-            <h1 className="text-xl font-headline font-black tracking-tighter text-primary uppercase">PDF A WORD PRO</h1>
+            <h1 className="text-xl font-headline font-black tracking-tighter text-primary uppercase">PDF A WORD NEW</h1>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -191,7 +191,7 @@ export default function PdfToWordConverter() {
                 <Button className="bg-primary hover:bg-primary/90 text-white font-black px-10 py-7 rounded-2xl text-lg uppercase tracking-widest shadow-xl transition-all active:scale-95">
                   Elegir Archivo
                 </Button>
-                <input type="file" ref={fileInputRef} accept="application/pdf" onChange={handleFileSelect} className="hidden" />
+                <input type="file" type="file" ref={fileInputRef} accept="application/pdf" onChange={handleFileSelect} className="hidden" />
               </div>
             ) : (
               <div className="space-y-8 animate-in zoom-in-95 duration-300">
